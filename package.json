@@ -10,8 +10,8 @@
     "router.d.ts"
   ],
   "scripts": {
-    "build": "",
-    "test": ""
+    "build": "esbuild ./src/router.ts --outfile=router.min.mjs --format=esm --minify --bundle && esbuild ./src/router.ts --outfile=router.min.js --format=iife --bundle --minify-whitespace --global-name=Router",
+		"test": "npm run build && cp ./router.min.js ./test/router.min.js && cp ./router.min.mjs ./test/router.min.mjs && serve ./test"
   },
   "author": "Kyle Andrews <codingwithkyle@gmail.com>",
   "license": "MIT",

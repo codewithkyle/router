@@ -1,3 +1,5 @@
 .DS_Store
 .editorconfig
 node_modules
+router.min.js
+router.min.mjs

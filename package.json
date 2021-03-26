@@ -1,0 +1,22 @@
+{
+  "name": "@codewithkyle/router",
+  "version": "1.0.0",
+  "description": "",
+  "main": "router.min.mjs",
+  "types": "router.d.ts",
+  "files": [
+    "router.min.mjs",
+    "router.min.js",
+    "router.d.ts"
+  ],
+  "scripts": {
+    "build": "",
+    "test": ""
+  },
+  "author": "Kyle Andrews <codingwithkyle@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.10.1",
+    "serve": "^11.3.2"
+  }
+}

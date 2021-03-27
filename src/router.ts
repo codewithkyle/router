@@ -1,14 +1,17 @@
-import { Router as RouterModel } from "../router";
+import { Router as RouterModel, Route } from "../router";
 
 class Router {
     public router: RouterModel;
     private mountingPoint:HTMLElement;
+    private modules: {
+        [tagName:string]: any;
+    };
 
     constructor(){
         this.router = {};
         this.mountingPoint = document.body;
-        this.hijack();
-        this.hijackPopstates();
+        this.modules = {};
+        document.addEventListener("click", this.hijackClick, {capture: true});
     }
 
     public configure(router:RouterModel):void{
@@ -30,24 +33,13 @@ class Router {
             location.href = url;
         }
     }
-
-    private hijackPopstates():void{
-        // TODO: hijack popsates
-    }
-
-    private hijack():void{
-        const links = document.body.querySelectorAll(`a[href]:not([target="_blank"]):not([tracked])`);
-        for (let i = 0; i < links.length; i++){
-            links[i].addEventListener("click", this.hijackAnchorClick);
-        }
-        setTimeout(this.hijack.bind(this), 50);
-    }
     
-    private hijackAnchorClick:EventListener = (e:Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const target:HTMLAnchorElement = e.currentTarget as HTMLAnchorElement;
-        this.route(target.href);
+    private hijackClick:EventListener = (e:Event) => {
+        if (e.target instanceof HTMLAnchorElement){
+            e.preventDefault();
+            e.stopPropagation();
+            this.route(e.target.href);
+        }
     }
 
     private replaceState(url:string):void{
@@ -64,12 +56,33 @@ class Router {
         this.pushState(`${location.origin}/${url}`);
     }
 
-    private async import(file:string, tagName:string): Promise<HTMLElement>{
+    private async import(data:string|Route): Promise<HTMLElement>{
+        let tagName = null;
+        let file = null;
+        if (typeof data === "string"){
+            tagName = data;
+            file = `./${tagName}.js`;
+        } else {
+            tagName = data.tagName;
+            file = data.file;
+        }
+
+        if (tagName === null || file === null){
+            return null;
+        }
+
+        if (this.modules?.[tagName]){
+            return new this.modules[tagName].default();
+        }
+
         const module = await import(file);
+        this.modules[tagName] = module;
+
         if (!customElements.get(tagName)){
             customElements.define(tagName, module.default);
         }
-        return new module.default();
+        
+        return new this.modules[tagName].default();
     }
 
     private async route(url:string){
@@ -87,15 +100,15 @@ class Router {
         } else {
             let el = null;
             if (this.router?.[url]){
-                el = await this.import(this.router[url].file, this.router[url].tagName);
+                el = await this.import(this.router[url]);
             } else {
                 // TODO: dynamically determine the correct route
             }
             if (el === null && this.router?.["*"]){
-                el = await this.import(this.router["*"].file, this.router["*"].tagName);
+                el = await this.import(this.router["*"]);
             } else if (this.router?.["404"]){
                 url = `404`;
-                el = await this.import(this.router["404"].file, this.router["404"].tagName);
+                el = await this.import(this.router["404"]);
             }
             if (el !== null){
                 this.mountElement(el, url);

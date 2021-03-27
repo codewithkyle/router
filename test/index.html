@@ -18,11 +18,16 @@
 			outline: none;
 			background: transparent;
 		}
+        a{
+            text-decoration: none;
+        }
 	</style>
 </head>
-<body class="m-0 bg-grey-200 w-screen h-screen" flex="items-center justify-center">
-	
-	<button class="js- bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Button</button>
+<body class="m-0 bg-grey-200 w-screen h-screen" flex="items-center justify-center column wrap">
+    <header class="w-full text-center fixed t-0 l-0" flex="items-center justify-center">
+	    <a href="/blog/article/example-article-page" class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Go to test page</a>
+        <a href="/" class="bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer inline-block shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Go Home</a>
+    </header>
 
     <main></main>
 
@@ -31,13 +36,10 @@
         const main = document.body.querySelector("main");
         mount(main);
         configure({
-            "/test": {
-                tagName: "blog-article",
-                file: "./blog-article.js",
-            },
-            "*": {
-                tagName: "blog-article",
-                file: "./blog-article.js",
+            "/blog/article/example-article-page": "blog-article",
+            "/": {
+                tagName: "homepage-component",
+                file: "./homepage.js",
             },
         });
 	</script>

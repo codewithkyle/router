@@ -1,8 +1,10 @@
+export type Route = {
+    tagName: string;
+    file: string;
+};
+
 export type Router = {
-    [route:string]: {
-        tagName: string;
-        file: string;
-    };
+    [route:string]: Route | string;
 }
 
 declare const navigate: (url:string) => void;

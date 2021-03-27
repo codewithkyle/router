@@ -1,6 +1,6 @@
 # Router
 
-A lightweight (1.9kb) lazy loading Web Component based declarative routing library.
+A lightweight (2kb) lazy loading Web Component based declarative routing library.
 
 ## Install
 

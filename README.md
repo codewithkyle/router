@@ -124,7 +124,7 @@ html[router="loading"] * {
 }
 ```
 
-### SASS
+### SCSS
 
 ```scss
 .my-class {

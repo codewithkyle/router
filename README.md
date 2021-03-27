@@ -82,7 +82,7 @@ interface Params {
 
 Components can be loaded using a `Route` or `WebComponentTagName` interface.
 
-#### WebComponentTagName
+#### Web Component Tag Names
 
 Using the `WebComponentTagName` interface is the easiest way to load components. Simply provide a valid [Custom Elememt](https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name) tag name to the router. When a route is requested the Router will automagically import and mount the component. It's important to note that the importer is expecting the JavaScript file name to be the tag name with an appended `.js` extenstion (ex: `my-custom-element.js`). Also, files must be located in the same directory as the Router. If they are not located in the same directory or the file name does not match the required naming convention use the `Route` interface instead.
 

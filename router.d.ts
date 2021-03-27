@@ -1,4 +1,4 @@
-export type WebComponentTagName = string;
+export type WebComponentTagName = string
 
 export type Route = {
     tagName: string;
@@ -6,7 +6,7 @@ export type Route = {
 };
 
 export type Router = {
-    [route:string]: Route | WebComponentTagName;
+    [route:string]: Route | string;
 }
 
 export type Tokens = {

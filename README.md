@@ -33,13 +33,13 @@ mount(main);
 
 // Configure the router
 configure({
-    // declare static routes & request components using the HTML elements tag name
+    // declare static routes & request components using the WebComponentTagName interface
     "/contact-us": "contact-us",
-    // use curly brances to declare route tokens
+    // use curly brances to declare routing tokens
     "/blog/article/{SLUG}": "blog-article",
-    // use * to wildcard match the route
+    // use * for wildcard matching
     "/about-us/*": "about-us",
-    // load a specific ES Moudle file
+    // request components using the Route interface
     "/": {
         tagName: "home-page",
         file: "/homepage.js",

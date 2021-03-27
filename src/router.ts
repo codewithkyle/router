@@ -45,7 +45,12 @@ class Router {
         if (e.target instanceof HTMLAnchorElement && e.target.target !== "_blank" && e.target?.href?.length){
             e.preventDefault();
             e.stopPropagation();
-            this.route(e.target.href);
+            let history = e.target.getAttribute("history");
+            if (history === "push" || history === "replace"){
+                this.route(e.target.href, history);
+            } else {
+                this.route(e.target.href);
+            }
         }
     }
 

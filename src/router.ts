@@ -47,6 +47,20 @@ class Router {
         this.replaceState(`${location.origin}${location.pathname}${hash}`);
     }
 
+    public replaceState(url:string):void{
+        url = url.replace(location.origin, "").replace(/^\//, "").trim();
+        window.history.replaceState({
+            url: url,
+        }, document.title, `${location.origin}/${url}`);
+    }
+
+    public pushState(url:string):void{
+        url = url.replace(location.origin, "").replace(/^\//, "").trim();
+        window.history.pushState({
+            url: url,
+        }, document.title, `${location.origin}/${url}`);
+    }
+
     private hijackPopstate = (e:PopStateEvent) => {
         if (e.state?.url){
             this.route(e.state.url, "replace");
@@ -65,18 +79,6 @@ class Router {
                 this.route(url);
             }
         }
-    }
-
-    private replaceState(url:string):void{
-        window.history.replaceState({
-            url: url,
-        }, document.title, url);
-    }
-
-    private pushState(url:string):void{
-        window.history.pushState({
-            url: url,
-        }, document.title, url);
     }
 
     private mountElement(el:HTMLElement, url:string, history:"push"|"replace"):void{
@@ -257,5 +259,7 @@ const navigateTo = router.navigateTo.bind(router);
 const configure = router.configure.bind(router);
 const mount = router.mount.bind(router);
 const pageJump = router.pageJump.bind(router);
+const replaceState = router.replaceState.bind(router);
+const pushState = router.pushState.bind(router);
 
-export { navigateTo, configure, mount, pageJump };
+export { navigateTo, configure, mount, pageJump, replaceState, pushState };

@@ -13,7 +13,7 @@ npm i -S @codewithkyle/router
 Or via CDN:
 
 ```javascript
-import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+import { configure, navigateTo, mount, pageJump, replaceState, pushState } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
 ```
 
 ```html
@@ -27,7 +27,7 @@ import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/
 #### app.js
 
 ```typescript
-import { configure, navigateTo, mount, pageJump } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+import { configure, navigateTo, mount, pageJump, replaceState, pushState } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
 
 // Mount the router to a specific HTML element
 const main = document.body.querySelector("main");
@@ -50,11 +50,17 @@ configure({
     "404": "missing-page",
 });
 
-// Navigate to a page using JavaScript
+// Navigate to a page via JavaScript
 navigateTo("/blog/article/example");
 
-// Trigger a page jump using JavaScript
+// Trigger a page jump via JavaScript
 pageJump("#page-jump-hash");
+
+// Replace the current history state via JavaScript
+replaceState("/manual-url/path-name/updating");
+
+// Push a history state via JavaScript
+pushState("/manual-url/path-name/changing");
 ```
 
 #### homepage.js

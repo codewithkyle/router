@@ -12,6 +12,7 @@ class Router {
         this.mountingPoint = document.body;
         this.modules = {};
         document.addEventListener("click", this.hijackClick, {capture: true});
+        window.addEventListener("popstate", this.hijackPopstate);
     }
 
     public configure(router:RouterModel):void{
@@ -19,7 +20,7 @@ class Router {
         for (const key in router){
             this.router[key.replace(/^\/|\/$/g, "")] = router[key];
         }
-        this.route(location.href);
+        this.route(location.href, "replace");
     }
 
     public mount(element:HTMLElement):void{
@@ -33,9 +34,15 @@ class Router {
             location.href = url;
         }
     }
+
+    private hijackPopstate = (e:PopStateEvent) => {
+        if (e.state?.url){
+            this.route(e.state.url, "replace");
+        }
+    }
     
     private hijackClick:EventListener = (e:Event) => {
-        if (e.target instanceof HTMLAnchorElement){
+        if (e.target instanceof HTMLAnchorElement && e.target.target !== "_blank" && e.target?.href?.length){
             e.preventDefault();
             e.stopPropagation();
             this.route(e.target.href);
@@ -43,17 +50,25 @@ class Router {
     }
 
     private replaceState(url:string):void{
-        window.history.replaceState(null, document.title, url);
+        window.history.replaceState({
+            url: url,
+        }, document.title, url);
     }
 
     private pushState(url:string):void{
-        window.history.pushState(null, document.title, url);
+        window.history.pushState({
+            url: url,
+        }, document.title, url);
     }
 
-    private mountElement(el, url):void{
+    private mountElement(el, url, history):void{
         this.mountingPoint?.firstElementChild?.remove();
         this.mountingPoint.appendChild(el);
-        this.pushState(`${location.origin}/${url}`);
+        if (history === "replace"){
+            this.replaceState(`${location.origin}/${url}`);
+        } else {
+            this.pushState(`${location.origin}/${url}`);
+        }
     }
 
     private async import(data:string|Route): Promise<HTMLElement>{
@@ -85,7 +100,7 @@ class Router {
         return new this.modules[tagName].default();
     }
 
-    private async route(url:string){
+    private async route(url:string, history:"replace"|"push" = "push"){
         url = url.replace(location.origin, "").replace(/^\//, "").replace(/\/$/, "");
         if (url.indexOf("#") === 0){
             const el:HTMLElement = document.body.querySelector(url);
@@ -111,7 +126,7 @@ class Router {
                 el = await this.import(this.router["404"]);
             }
             if (el !== null){
-                this.mountElement(el, url);
+                this.mountElement(el, url, history);
             } else {
                 location.href = `${location.origin}/404`;
             }

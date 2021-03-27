@@ -24,6 +24,8 @@ import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/
 
 ### Example
 
+**app.js**
+
 ```typescript
 import { configure, navigateTo, mount, pageJump } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
 
@@ -53,6 +55,18 @@ navigateTo("/blog/article/example");
 
 // Trigger a page jump using JavaScript
 pageJump("#page-jump-hash");
+```
+
+**homepage.js**
+
+```typescript
+// You can export your Web Components as default or as a named export.
+export default class Homepage extends HTMLElement{
+    constructor(tokens:Tokens, params:Params){
+        super();
+        // ...snip...
+    }
+}
 ```
 
 ### Interfaces

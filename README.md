@@ -111,3 +111,27 @@ It's important to note that the importer is expecting the JavaScript file name t
 #### Route
 
 Using the `Route` interface allows you to have more control over your files. A `Route` is composed of a valid [Custom Elememt](https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name) tag name and path to the file. The path can either be a file system path (ex: `../../my-file.js`) or it can be a URL (ex; `/components/my-file.js` or `https://cdn.example.com/components/my-file.js`).
+
+### Loading Animation
+
+Since this library bypasses the navive browser navigation functionality you will need to create your own loading state. When loading a route the Router will set a `[router]` attribute on the `<HTML>` element. Use the snippets blow to create a custom animations.
+
+#### CSS
+
+```css
+html[router="loading"] * {
+    cursor: wait !important;
+}
+```
+
+### SASS
+
+```sass
+.my-class {
+    color: blue;
+
+    & html[router="loading"] {
+        color: grey;
+    }
+}
+```

@@ -1,6 +1,6 @@
 # Router
 
-A lightweight Web Component based SPA routing library.
+A lightweight (1.9kb) lazy loading Web Component based declarative routing library.
 
 ## Install
 
@@ -22,28 +22,70 @@ import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/
 
 ## Usage
 
-```typescript
-import { configure, navigateTo, mount } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+### Example
 
+```typescript
+import { configure, navigateTo, mount, pageJump } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+
+// Mount the router to a specific HTML element
 const main = document.body.querySelector("main");
 mount(main);
 
+// Configure the router
 configure({
+    // declare static routes & request components using the HTML elements tag name
+    "/contact-us": "contact-us",
+    // use curly brances to declare route tokens
     "/blog/article/{SLUG}": "blog-article",
+    // use * to wildcard match the route
+    "/about-us/*": "about-us",
+    // load a specific ES Moudle file
+    "/": {
+        tagName: "home-page",
+        file: "/homepage.js",
+    },
+    // the 404 page is a catch-all for any route that fails the lookup
+    "404": "missing-page",
 });
 
+// Navigate to a page using JavaScript
 navigateTo("/blog/article/example");
+
+// Trigger a page jump using JavaScript
+pageJump("#page-jump-hash");
 ```
 
-## Interfaces
+### Interfaces
 
 ```typescript
-interface Route = {
+type WebComponentTagName = string;
+
+interface Route {
     tagName: string;
     file: string;
 };
 
-interface Router = {
-    [route:string]: Route | string;
+interface Router {
+    [route:string]: Route | WebComponentTagName;
 }
+
+interface Tokens {
+    [token:string]: string;
+};
+
+interface Params {
+    [param:string]: string | Array<string>;
+};
 ```
+
+### Loading Components
+
+Components can be loaded using a `Route` or `WebComponentTagName` interface.
+
+#### WebComponentTagName
+
+Using the `WebComponentTagName` interface is the easiest way to load components. Simply provide a valid [Custom Elememt](https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name) tag name to the router. When a route is requested the Router will automagically import and mount the component. It's important to note that the importer is expecting the JavaScript file name to be the tag name with an appended `.js` extenstion (ex: `my-custom-element.js`). Also, files must be located in the same directory as the Router. If they are not located in the same directory or the file name does not match the required naming convention use the `Route` interface instead.
+
+#### Route
+
+Using the `Route` interface allows you to have more control over your files. A `Route` is composed of a valid [Custom Elememt](https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name) tag name and path to the file. The path can either be a file system path (ex: `../../my-file.js`) or it can be a URL (ex; `/components/my-file.js` or `https://cdn.example.com/components/my-file.js`).

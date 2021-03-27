@@ -11,8 +11,6 @@ class Router {
         this.router = {};
         this.mountingPoint = document.body;
         this.modules = {};
-        document.addEventListener("click", this.hijackClick, {capture: true});
-        window.addEventListener("popstate", this.hijackPopstate);
     }
 
     public configure(router:RouterModel):void{
@@ -21,6 +19,8 @@ class Router {
             this.router[key.replace(/^\/|\/$/g, "")] = router[key];
         }
         this.route(location.href, "replace");
+        document.addEventListener("click", this.hijackClick, {capture: true});
+        window.addEventListener("popstate", this.hijackPopstate);
     }
 
     public mount(element:HTMLElement):void{
@@ -33,6 +33,18 @@ class Router {
         } else {
             location.href = url;
         }
+    }
+
+    public pageJump(hash:string, jump:"auto"|"smooth" = "smooth"){
+        const el:HTMLElement = document.body.querySelector(`#${hash.replace(/^\#/, "")}`);
+        if (el){
+            el.scrollIntoView({
+                behavior: jump,
+                block: "center",
+                inline: "center"
+            });
+        }
+        this.replaceState(`${location.origin}${location.pathname}${hash}`);
     }
 
     private hijackPopstate = (e:PopStateEvent) => {
@@ -67,7 +79,7 @@ class Router {
         }, document.title, url);
     }
 
-    private mountElement(el, url, history):void{
+    private mountElement(el:HTMLElement, url:string, history:"push"|"replace"):void{
         this.mountingPoint?.firstElementChild?.remove();
         this.mountingPoint.appendChild(el);
         if (history === "replace"){
@@ -77,10 +89,10 @@ class Router {
         }
     }
 
-    private async importModule(file): Promise<any>{
+    private async importModule(url:string): Promise<any>{
         let module = null;
         try{
-            module = await import(file);
+            module = await import(url);
         } catch (e) {
             console.error(e);
         }
@@ -172,18 +184,6 @@ class Router {
         return new this.modules[tagName].default(tokens, params);
     }
 
-    private pageJump(hash:string, jump:"auto"|"smooth" = "smooth"){
-        const el:HTMLElement = document.body.querySelector(hash);
-        if (el){
-            el.scrollIntoView({
-                behavior: jump,
-                block: "center",
-                inline: "center"
-            });
-        }
-        this.replaceState(`${location.origin}${location.pathname}${hash}`);
-    }
-
     private lookupRoute(url:string):string{
         let route = null;
         console.log(url);
@@ -256,5 +256,6 @@ const router = new Router();
 const navigateTo = router.navigateTo.bind(router);
 const configure = router.configure.bind(router);
 const mount = router.mount.bind(router);
+const pageJump = router.pageJump.bind(router);
 
-export { navigateTo, configure, mount };
+export { navigateTo, configure, mount, pageJump };

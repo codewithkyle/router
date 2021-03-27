@@ -114,7 +114,7 @@ Using the `Route` interface allows you to have more control over your files. A `
 
 ### Loading Animation
 
-Since this library bypasses the navive browser navigation functionality you will need to create your own loading state. When loading a route the Router will set a `[router]` attribute on the `<HTML>` element. Use the snippets blow to create a custom animations.
+Since this library bypasses the navive browser navigation functionality you will need to create your own loading state. When loading a route the Router will set a `[router]` attribute on the `<HTML>` element. You can use the snippets blow to create custom animations.
 
 #### CSS
 

@@ -1,4 +1,4 @@
-import { Router as RouterModel, Route } from "../router";
+import { Router as RouterModel, Route, Tokens } from "../router";
 
 class Router {
     public router: RouterModel;
@@ -86,12 +86,26 @@ class Router {
         return module;
     }
 
-    private async import(data:string|Route): Promise<HTMLElement>{
+    private parseTokens(url:string, route:string):Tokens{
+        const tokens:Tokens = {};
+        const urlSegments = url.split("/");
+        route = route.replace(/^\/|\/$/g, "").trim();
+        const routeSegments = route.split("/");
+        for (let i = 0; i < routeSegments.length; i++){
+            if (routeSegments[i].indexOf("{") === 0 && routeSegments[i].indexOf("}") === routeSegments[i].length - 1){
+                const key = routeSegments[i].replace(/^\{|\}$/g, "").trim();
+                tokens[key] = urlSegments[i];
+            }
+        }
+        return tokens;
+    }
+
+    private async import(data:string|Route, url:string, route:string): Promise<HTMLElement>{
         let tagName = null;
         let file = null;
         if (typeof data === "string"){
             tagName = data;
-            file = `./${tagName}.js`;
+            file = `./${data}.js`;
         } else {
             tagName = data.tagName;
             file = data.file;
@@ -126,11 +140,13 @@ class Router {
             customElements.define(tagName, module.default);
         }
         
-        return new this.modules[tagName].default();
+        // TODO: inject tokens & URL params into components constructor
+        const tokens = this.parseTokens(url, route);
+        return new this.modules[tagName].default(tokens);
     }
 
     private async route(url:string, history:"replace"|"push" = "push"){
-        url = url.replace(location.origin, "").replace(/^\//, "").replace(/\/$/, "");
+        url = url.replace(location.origin, "").replace(/^\//, "").replace(/\/$/, "").trim();
         if (url.indexOf("#") === 0){
             const el:HTMLElement = document.body.querySelector(url);
             if (el){
@@ -143,20 +159,24 @@ class Router {
             this.replaceState(`${location.origin}${location.pathname}${url}`);
         } else {
             document.documentElement.setAttribute("router", "loading");
-            let el = null;
+            let route = null;
             if (this.router?.[url]){
-                el = await this.import(this.router[url]);
+                route = url;
             } else {
                 // TODO: dynamically determine the correct route
+                route = "blog/article/{SLUG}";
             }
-            if (el === null && this.router?.["*"]){
-                el = await this.import(this.router["*"]);
-            } else if (this.router?.["404"]){
+            if (route === null && this.router?.["404"]){
                 url = `404`;
-                el = await this.import(this.router["404"]);
+                route = url;
             }
-            if (el !== null){
-                this.mountElement(el, url, history);
+            if (route !== null){
+                const el = await this.import(this.router[route], url, route);
+                if (el !== null){
+                    this.mountElement(el, url, history);
+                } else {
+                    location.href = `${location.origin}/404`;
+                }
             } else {
                 location.href = `${location.origin}/404`;
             }

@@ -13,7 +13,7 @@ npm i -S @codewithkyle/router
 Or via CDN:
 
 ```javascript
-import {  } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
 ```
 
 ```html
@@ -23,9 +23,22 @@ import {  } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min
 ## Usage
 
 ```typescript
-import {  } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
 
-// TODO: write examples
+configure({
+    "/blog/article/{SLUG}": BlogArticle
+});
+
+navigate("/blog/article/example");
+
+class BlogArticle extends HTMLElement{
+    constructor(tokens, params){
+        this.render();
+    }
+    private render(){
+        // ...snip...
+    }
+}
 ```
 
 ## Interfaces

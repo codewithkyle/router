@@ -2,20 +2,29 @@ import { Router as RouterModel } from "../router";
 
 class Router {
     public router: RouterModel;
+    private mountingPoint:HTMLElement;
 
     constructor(){
         this.router = {};
+        this.mountingPoint = document.body;
         this.hijack();
         this.hijackPopstates();
     }
 
     public configure(router:RouterModel):void{
-        this.router = router;
+        this.router = {};
+        for (const key in router){
+            this.router[key.replace(/^\/|\/$/g, "")] = router[key];
+        }
         this.route(location.href);
     }
 
-    public navigate(url:string):void{
-        if (url.indexOf(location.origin) === 0){
+    public mount(element:HTMLElement):void{
+        this.mountingPoint = element;
+    }
+
+    public navigateTo(url:string):void{
+        if (url.indexOf(location.origin) === 0 || url.indexOf("/") === 0){
             this.route(url);
         } else {
             location.href = url;
@@ -49,8 +58,22 @@ class Router {
         window.history.pushState(null, document.title, url);
     }
 
-    private route(url:string):void{
-        url = url.replace(location.origin, "").replace(/^\//, "");
+    private mountElement(el, url):void{
+        this.mountingPoint?.firstElementChild?.remove();
+        this.mountingPoint.appendChild(el);
+        this.pushState(`${location.origin}/${url}`);
+    }
+
+    private async import(file:string, tagName:string): Promise<HTMLElement>{
+        const module = await import(file);
+        if (!customElements.get(tagName)){
+            customElements.define(tagName, module.default);
+        }
+        return new module.default();
+    }
+
+    private async route(url:string){
+        url = url.replace(location.origin, "").replace(/^\//, "").replace(/\/$/, "");
         if (url.indexOf("#") === 0){
             const el:HTMLElement = document.body.querySelector(url);
             if (el){
@@ -62,14 +85,30 @@ class Router {
             }
             this.replaceState(`${location.origin}${location.pathname}${url}`);
         } else {
-            // TODO: break down routes & test until one matches, then append the web component to the mounting point/body w/ injected params
-            this.pushState(`${location.origin}/${url}`);
+            let el = null;
+            if (this.router?.[url]){
+                el = await this.import(this.router[url].file, this.router[url].tagName);
+            } else {
+                // TODO: dynamically determine the correct route
+            }
+            if (el === null && this.router?.["*"]){
+                el = await this.import(this.router["*"].file, this.router["*"].tagName);
+            } else if (this.router?.["404"]){
+                url = `404`;
+                el = await this.import(this.router["404"].file, this.router["404"].tagName);
+            }
+            if (el !== null){
+                this.mountElement(el, url);
+            } else {
+                location.href = `${location.origin}/404`;
+            }
         }
     }
 }
 
 const router = new Router();
-const navigate = router.navigate.bind(router);
+const navigateTo = router.navigateTo.bind(router);
 const configure = router.configure.bind(router);
+const mount = router.mount.bind(router);
 
-export { navigate, configure };
+export { navigateTo, configure, mount };

@@ -24,8 +24,22 @@
 	
 	<button class="js- bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Button</button>
 
+    <main></main>
+
 	<script type="module">
-        
+        import { configure, navigateTo, mount } from "./router.min.mjs";
+        const main = document.body.querySelector("main");
+        mount(main);
+        configure({
+            "/test": {
+                tagName: "blog-article",
+                file: "./blog-article.js",
+            },
+            "*": {
+                tagName: "blog-article",
+                file: "./blog-article.js",
+            },
+        });
 	</script>
 </body>
 </html>

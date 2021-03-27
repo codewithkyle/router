@@ -24,7 +24,7 @@ import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/
 
 ### Example
 
-**app.js**
+#### app.js
 
 ```typescript
 import { configure, navigateTo, mount, pageJump } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
@@ -57,7 +57,7 @@ navigateTo("/blog/article/example");
 pageJump("#page-jump-hash");
 ```
 
-**homepage.js**
+#### homepage.js
 
 ```typescript
 // You can export your Web Components as default or as a named export.

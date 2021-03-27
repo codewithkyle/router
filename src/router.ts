@@ -113,6 +113,7 @@ class Router {
             }
             this.replaceState(`${location.origin}${location.pathname}${url}`);
         } else {
+            document.documentElement.setAttribute("router", "loading");
             let el = null;
             if (this.router?.[url]){
                 el = await this.import(this.router[url]);
@@ -130,6 +131,7 @@ class Router {
             } else {
                 location.href = `${location.origin}/404`;
             }
+            document.documentElement.setAttribute("router", "idling");
         }
     }
 }

@@ -23,26 +23,27 @@ import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/
 ## Usage
 
 ```typescript
-import { configure, navigate } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+import { configure, navigateTo, mount } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@1/router.min.mjs";
+
+const main = document.body.querySelector("main");
+mount(main);
 
 configure({
-    "/blog/article/{SLUG}": BlogArticle
+    "/blog/article/{SLUG}": "blog-article",
 });
 
-navigate("/blog/article/example");
-
-class BlogArticle extends HTMLElement{
-    constructor(tokens, params){
-        this.render();
-    }
-    private render(){
-        // ...snip...
-    }
-}
+navigateTo("/blog/article/example");
 ```
 
 ## Interfaces
 
 ```typescript
-// TODO: write interfaces
+interface Route = {
+    tagName: string;
+    file: string;
+};
+
+interface Router = {
+    [route:string]: Route | string;
+}
 ```

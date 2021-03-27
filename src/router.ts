@@ -27,9 +27,9 @@ class Router {
         this.mountingPoint = element;
     }
 
-    public navigateTo(url:string):void{
+    public navigateTo(url:string, history:"replace"|"push" = "push"):void{
         if (url.indexOf(location.origin) === 0 || url.indexOf("/") === 0){
-            this.route(url);
+            this.route(url, history);
         } else {
             location.href = url;
         }
@@ -71,6 +71,16 @@ class Router {
         }
     }
 
+    private async importModule(file): Promise<any>{
+        let module = null;
+        try{
+            module = await import(file);
+        } catch (e) {
+            console.error(e);
+        }
+        return module;
+    }
+
     private async import(data:string|Route): Promise<HTMLElement>{
         let tagName = null;
         let file = null;
@@ -90,7 +100,21 @@ class Router {
             return new this.modules[tagName].default();
         }
 
-        const module = await import(file);
+        let module = await this.importModule(file);
+        if (module === null){
+            return null;
+        }
+
+        if (!module?.default){
+            const key = Object.keys(module)?.[0] ?? null;
+            if (!key){
+                return null;
+            }
+            module = Object.assign({
+                default: module[key],
+            }, module);
+        }
+
         this.modules[tagName] = module;
 
         if (!customElements.get(tagName)){

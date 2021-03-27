@@ -25,6 +25,15 @@
             cursor: wait !important;
         }
 	</style>
+    <script>
+        (function(){
+            var redirect = sessionStorage.redirect;
+            delete sessionStorage.redirect;
+            if (redirect && redirect != location.href){
+                history.replaceState(null, null, redirect);
+            }
+        })();
+    </script>
 </head>
 <body class="m-0 bg-grey-200 w-screen h-screen" flex="items-center justify-center column wrap">
     <header class="w-full text-center fixed t-0 l-0" flex="items-center justify-center">
@@ -35,14 +44,14 @@
     <main></main>
 
 	<script type="module">
-        import { configure, navigateTo, mount } from "./router.min.mjs";
+        import { configure, navigateTo, mount } from "/router.min.mjs";
         const main = document.body.querySelector("main");
         mount(main);
         configure({
             "/blog/article/{SLUG}": "blog-article",
             "/": {
                 tagName: "homepage-component",
-                file: "./homepage.js",
+                file: "/homepage.js",
             },
         });
 	</script>

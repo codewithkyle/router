@@ -167,18 +167,24 @@ class Router {
         return new this.modules[tagName].default(tokens, params);
     }
 
+    private pageJump(hash:string){
+        const el:HTMLElement = document.body.querySelector(hash);
+        if (el){
+            el.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+                inline: "center"
+            });
+        }
+        this.replaceState(`${location.origin}${location.pathname}${hash}`);
+    }
+
     private async route(url:string, history:"replace"|"push" = "push"){
-        url = url.replace(location.origin, "").replace(/^\//, "").replace(/\/$/, "").trim();
+        url = url.replace(location.origin, "").replace(/^\/|\/$/g, "").trim();
         if (url.indexOf("#") === 0){
-            const el:HTMLElement = document.body.querySelector(url);
-            if (el){
-                el.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center",
-                    inline: "center"
-                });
-            }
-            this.replaceState(`${location.origin}${location.pathname}${url}`);
+            this.pageJump(url);
+        } else if (url.indexOf("#") !== -1 && url.indexOf(location.pathname.replace(/^\/|\/$/g, "").trim()) === 0) {
+            this.pageJump(url.match(/\#.*/)[0]);
         } else {
             document.documentElement.setAttribute("router", "loading");
             let route = null;
@@ -186,7 +192,6 @@ class Router {
                 route = url;
             } else {
                 // TODO: dynamically determine the correct route
-                route = "blog/article/{SLUG}";
             }
             if (route === null && this.router?.["404"]){
                 url = `404`;

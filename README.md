@@ -126,7 +126,7 @@ html[router="loading"] * {
 
 ### SASS
 
-```sass
+```scss
 .my-class {
     color: blue;
 

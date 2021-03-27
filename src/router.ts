@@ -42,14 +42,15 @@ class Router {
     }
     
     private hijackClick:EventListener = (e:Event) => {
-        if (e.target instanceof HTMLAnchorElement && e.target.target !== "_blank" && e.target?.href?.length){
+        if (e.target instanceof HTMLAnchorElement && e.target.target !== "_blank" && e.target.getAttribute("href")){
             e.preventDefault();
             e.stopPropagation();
+            const url = e.target.getAttribute("href");
             let history = e.target.getAttribute("history");
             if (history === "push" || history === "replace"){
-                this.route(e.target.href, history);
+                this.route(url, history);
             } else {
-                this.route(e.target.href);
+                this.route(url);
             }
         }
     }
@@ -122,6 +123,10 @@ class Router {
     }
 
     private async import(data:string|Route, url:string, route:string): Promise<HTMLElement>{
+        if (data === null){
+            throw "Missing route data.";
+        }
+
         let tagName = null;
         let file = null;
         if (typeof data === "string"){
@@ -136,7 +141,7 @@ class Router {
         const params = this.parseGetParams(url);
 
         if (tagName === null || file === null){
-            return null;
+            throw "Missing route data.";
         }
 
         if (this.modules?.[tagName]){
@@ -145,13 +150,13 @@ class Router {
 
         let module = await this.importModule(file);
         if (module === null){
-            return null;
+            throw "Failed to dynamically import module.";
         }
 
         if (!module?.default){
             const key = Object.keys(module)?.[0] ?? null;
             if (!key){
-                return null;
+                throw "ES Module is exporting an empty object.";
             }
             module = Object.assign({
                 default: module[key],
@@ -167,11 +172,11 @@ class Router {
         return new this.modules[tagName].default(tokens, params);
     }
 
-    private pageJump(hash:string){
+    private pageJump(hash:string, jump:"auto"|"smooth" = "smooth"){
         const el:HTMLElement = document.body.querySelector(hash);
         if (el){
             el.scrollIntoView({
-                behavior: "smooth",
+                behavior: jump,
                 block: "center",
                 inline: "center"
             });
@@ -179,32 +184,67 @@ class Router {
         this.replaceState(`${location.origin}${location.pathname}${hash}`);
     }
 
+    private lookupRoute(url:string):string{
+        let route = null;
+        console.log(url);
+        url = url.replace(/\?.*|\#.*/g, "").replace(/^\/|\/$/g, "").trim();
+        const urlSegments = url.split("/");
+        for (const key in this.router){
+            const routeSegments = key.split("/");
+            if (routeSegments.length === urlSegments.length){
+                let isMatch = true;
+                for (let i = 0; i < routeSegments.length; i++){
+                    const routeSegment = routeSegments[i].trim().toLowerCase();
+                    if (routeSegment === "*"){
+                        break;
+                    } else if (routeSegment.indexOf("{") === 0 && routeSegment.indexOf("}") === routeSegment.length - 1){
+                        continue;
+                    } else if (routeSegment === urlSegments[i].trim().toLowerCase()){
+                        continue;
+                    } else {
+                        isMatch = false;
+                        break;
+                    }
+                }
+                if (isMatch){
+                    route = key;
+                    break;
+                }
+            }
+        }
+        return route;
+    }
+
     private async route(url:string, history:"replace"|"push" = "push"){
         url = url.replace(location.origin, "").replace(/^\/|\/$/g, "").trim();
         if (url.indexOf("#") === 0){
             this.pageJump(url);
-        } else if (url.indexOf("#") !== -1 && url.indexOf(location.pathname.replace(/^\/|\/$/g, "").trim()) === 0) {
-            this.pageJump(url.match(/\#.*/)[0]);
         } else {
             document.documentElement.setAttribute("router", "loading");
             let route = null;
             if (this.router?.[url]){
                 route = url;
             } else {
-                // TODO: dynamically determine the correct route
+                route = this.lookupRoute(url);
             }
             if (route === null && this.router?.["404"]){
                 url = `404`;
                 route = url;
             }
-            if (route !== null){
+            try{
                 const el = await this.import(this.router[route], url, route);
-                if (el !== null){
-                    this.mountElement(el, url, history);
+                this.mountElement(el, url, history);
+                if (url.indexOf("#") !== -1){
+                    this.pageJump(url.match(/\#.*/)[0], "auto");
                 } else {
-                    location.href = `${location.origin}/404`;
+                    el.scrollIntoView({
+                        block: "start",
+                        inline: "start",
+                        behavior: "auto",
+                    });
                 }
-            } else {
+            } catch (e) {
+                console.error(e);
                 location.href = `${location.origin}/404`;
             }
             document.documentElement.setAttribute("router", "idling");

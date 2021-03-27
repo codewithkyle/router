@@ -1,4 +1,4 @@
-import { Router as RouterModel, Route, Tokens } from "../router";
+import { Router as RouterModel, Route, Tokens, Params } from "../router";
 
 class Router {
     public router: RouterModel;
@@ -88,6 +88,7 @@ class Router {
 
     private parseTokens(url:string, route:string):Tokens{
         const tokens:Tokens = {};
+        url = url.replace(/\?.*/, "").trim();
         const urlSegments = url.split("/");
         route = route.replace(/^\/|\/$/g, "").trim();
         const routeSegments = route.split("/");
@@ -98,6 +99,26 @@ class Router {
             }
         }
         return tokens;
+    }
+
+    private parseGetParams(url:string):Params{
+        const params:Params = {};
+        const urlParams = url.match(/\?.*/)?.[0] ?? null;
+        if (!urlParams){
+            return params;
+        }
+        const urlSearchParams = new URLSearchParams(urlParams);
+        urlSearchParams.forEach((value, key) => {
+            if (!params?.[key]){
+                const values = urlSearchParams.getAll(key);
+                if (values.length > 1){
+                    params[key] = values;
+                } else {
+                    params[key] = values[0];
+                }
+            }
+        });
+        return params;
     }
 
     private async import(data:string|Route, url:string, route:string): Promise<HTMLElement>{
@@ -111,12 +132,15 @@ class Router {
             file = data.file;
         }
 
+        const tokens = this.parseTokens(url, route);
+        const params = this.parseGetParams(url);
+
         if (tagName === null || file === null){
             return null;
         }
 
         if (this.modules?.[tagName]){
-            return new this.modules[tagName].default();
+            return new this.modules[tagName].default(tokens, params);
         }
 
         let module = await this.importModule(file);
@@ -140,9 +164,7 @@ class Router {
             customElements.define(tagName, module.default);
         }
         
-        // TODO: inject tokens & URL params into components constructor
-        const tokens = this.parseTokens(url, route);
-        return new this.modules[tagName].default(tokens);
+        return new this.modules[tagName].default(tokens, params);
     }
 
     private async route(url:string, history:"replace"|"push" = "push"){

@@ -44,7 +44,7 @@ configure({
         tagName: "home-page",
         file: "/homepage.js",
     },
-    // the 404 page is a catch-all for any route that fails the lookup
+    // add a 404 route to act as a catch-all
     "404": "missing-page",
 });
 

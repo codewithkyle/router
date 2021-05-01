@@ -188,7 +188,6 @@ class Router {
 
     private lookupRoute(url:string):string{
         let route = null;
-        console.log(url);
         url = url.replace(/\?.*|\#.*/g, "").replace(/^\/|\/$/g, "").trim();
         const urlSegments = url.split("/");
         for (const key in this.router){

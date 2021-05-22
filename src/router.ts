@@ -62,7 +62,7 @@ class Router {
     }
 
     private hijackPopstate = (e:PopStateEvent) => {
-        if (e.state?.url){
+        if ("url" in e.state){
             this.route(e.state.url, "replace");
         }
     }

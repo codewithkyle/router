@@ -135,3 +135,16 @@ html[router="loading"] * {
     }
 }
 ```
+
+### Custom Events
+
+```typescript
+// Fired after the router has started and is ready to hijack navigation events
+document.addEventListener("router:ready", () => { console.log("Ready") });
+
+// Fired when the page has started the loading process
+document.addEventListener("router:loading", () => { console.log("Loading") });
+
+// Fired after the page has loaded and the history state has been updated
+document.addEventListener("router:loaded", () => { console.log("Loaded") });
+```

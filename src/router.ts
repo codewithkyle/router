@@ -21,6 +21,7 @@ class Router {
         this.route(location.href, "replace");
         document.addEventListener("click", this.hijackClick, {capture: true});
         window.addEventListener("popstate", this.hijackPopstate);
+        this.dispatchEvent("ready");
     }
 
     public mount(element:HTMLElement):void{
@@ -222,6 +223,7 @@ class Router {
             this.pageJump(url);
         } else {
             document.documentElement.setAttribute("router", "loading");
+            this.dispatchEvent("loading");
             let route = null;
             if (this.router?.[url]){
                 route = url;
@@ -249,7 +251,13 @@ class Router {
                 location.href = `${location.origin}/404`;
             }
             document.documentElement.setAttribute("router", "idling");
+            this.dispatchEvent("loaded");
         }
+    }
+
+    private dispatchEvent(type:"loading"|"loaded"|"ready"){
+        var event = new CustomEvent(`router:${type}`);
+        document.dispatchEvent(event);
     }
 }
 

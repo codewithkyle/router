@@ -57,6 +57,9 @@
             },
             "404": "missing-page",
         });
+        document.addEventListener("router:ready", () => { console.log("Ready") });
+        document.addEventListener("router:loaded", () => { console.log("Loaded") });
+        document.addEventListener("router:loading", () => { console.log("Loading") });
 	</script>
 </body>
 </html>

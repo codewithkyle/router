@@ -1,4 +1,4 @@
-export type WebComponentTagName = string
+export type WebComponentTagName = string;
 
 export type Route = {
     tagName: string;
@@ -6,18 +6,20 @@ export type Route = {
 };
 
 export type Router = {
-    [route:string]: Route | string;
-}
+    [route: string]: Route | string;
+};
 
 export type Tokens = {
-    [token:string]: string;
+    [token: string]: string;
 };
 
 export type Params = {
-    [param:string]: string | Array<string>;
+    [param: string]: string | Array<string>;
 };
 
-declare const mount: (element:HTMLElement) => void;
-declare const configure: (router:Router) => void;
-declare const navigateTo: (url:string, history?:"replace"|"push") => void;
-declare const pageJump: (hash:string, jump?:"auto"|"smooth") => void;
+declare const mount: (element: HTMLElement) => void;
+declare const configure: (router: Router) => void;
+declare const navigateTo: (url: string, history?: "replace" | "push") => void;
+declare const pageJump: (hash: string, jump?: "auto" | "smooth") => void;
+declare const replaceState: (url: string) => void;
+declare const pushState: (url: string) => void;

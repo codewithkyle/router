@@ -3,7 +3,7 @@ export default class BlogArticle extends HTMLElement {
         super();
         console.log(tokens, params);
         this.innerHTML = `
-            <h1>Blog article page for ${tokens["SLUG"]}</h1>
+            <h1>Blog article page ${tokens["SLUG"]}</h1>
             <div style="padding:200vh 0;">
                 <h2 id="test">Hey you ;)</h2>
             </div>

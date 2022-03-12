@@ -1,35 +1,194 @@
-import { Router as RouterModel, Route, Tokens, Params } from "../router";
+import type { Route, Tokens, Params, GroupSettings, Module } from "../router";
+
+class RouterGroup {
+    private router: Router;
+    private prefix: string;
+    private middleware: Array<Function>;
+
+    constructor(router: Router, prefix = "", middleware = []) {
+        this.router = router;
+        this.prefix = prefix;
+        this.middleware = middleware;
+    }
+
+    public addMiddleware(closure: Function): void {
+        this.middleware.push(closure);
+    }
+
+    public appendPrefix(prefix: string): void {
+        this.prefix += `/${prefix.trim().replace(/^\/|\/$/g, "")}`;
+    }
+
+    public group(settings: GroupSettings, closure: Function) {
+        const routerGroup = new RouterGroup(this.router, this.prefix, [
+            ...this.middleware,
+        ]);
+        if (settings?.prefix?.length) {
+            routerGroup.appendPrefix(settings.prefix);
+        }
+        if (settings?.middleware) {
+            if (Array.isArray(settings.middleware)) {
+                for (let i = 0; i < settings.middleware.length; i++) {
+                    routerGroup.addMiddleware(settings.middleware[i]);
+                }
+            } else {
+                routerGroup.addMiddleware(settings.middleware);
+            }
+        }
+        closure(routerGroup);
+    }
+
+    public add(route: string, module: string | Function | Module): void {
+        const cleanRoute = `${this.prefix}/${route
+            .trim()
+            .replace(/^\/|\/$/g, "")}`;
+        this.router.add(cleanRoute, module, [...this.middleware]);
+    }
+
+    public redirect(
+        route: string,
+        url: string,
+        middleware: Array<Function> = null
+    ): void {
+        const cleanRoute = `${this.prefix}/${route
+            .trim()
+            .replace(/^\/|\/$/g, "")}`;
+        this.router.redirect(cleanRoute, url, [...this.middleware]);
+    }
+}
 
 class Router {
-    public router: RouterModel;
+    public routes: Array<Route>;
     private mountingPoint: HTMLElement;
     private modules: {
         [tagName: string]: any;
     };
 
     constructor() {
-        this.router = {};
-        this.mountingPoint = document.body;
+        this.routes = [];
+        this.mountingPoint = null;
         this.modules = {};
     }
 
-    public configure(router: RouterModel): void {
-        this.router = {};
-        for (const key in router) {
-            this.router[key.replace(/^\/|\/$/g, "")] = router[key];
+    public group(settings: GroupSettings, closure: Function) {
+        const routerGroup = new RouterGroup(this);
+        if (settings?.prefix?.length) {
+            routerGroup.appendPrefix(settings.prefix);
         }
-        this.route(location.href, "replace");
-        document.addEventListener("click", this.hijackClick, { capture: true });
-        window.addEventListener("popstate", this.hijackPopstate);
-        this.dispatchEvent("ready");
+        if (settings?.middleware) {
+            if (Array.isArray(settings.middleware)) {
+                for (let i = 0; i < settings.middleware.length; i++) {
+                    routerGroup.addMiddleware(settings.middleware[i]);
+                }
+            } else {
+                routerGroup.addMiddleware(settings.middleware);
+            }
+        }
+        closure(routerGroup);
+    }
+
+    public add(
+        route: string,
+        module: string | Function | Module,
+        middleware: Function | Array<Function> = null
+    ): void {
+        const routeModel = this.prepareRouteModel(route);
+        if (typeof module === "string") {
+            routeModel.tagName = module;
+            if (module.indexOf("http") === 0) {
+                routeModel.file = module;
+            } else {
+                routeModel.file = `./${module
+                    .trim()
+                    .replace(/(\.js)$/, "")
+                    .trim()}.js`;
+            }
+        } else if (module instanceof Function) {
+            routeModel.closure = module;
+        } else {
+            routeModel.tagName = module.tagName;
+            routeModel.file = module.file;
+        }
+        if (middleware instanceof Function) {
+            routeModel.middleware.push(middleware);
+        } else if (Array.isArray(middleware)) {
+            routeModel.middleware = [...routeModel.middleware, ...middleware];
+        }
+        this.routes.push(routeModel);
+    }
+
+    public redirect(
+        route: string,
+        url: string,
+        middleware: Array<Function> = null
+    ): void {
+        const routeModel = this.prepareRouteModel(route);
+        if (middleware instanceof Function) {
+            routeModel.middleware.push(middleware);
+        } else if (Array.isArray(middleware)) {
+            routeModel.middleware = [...routeModel.middleware, ...middleware];
+        }
+        routeModel.redirect = url.trim().replace(/^\/|\/$/g, "");
+        this.routes.push(routeModel);
+    }
+
+    private prepareRouteModel(route: string): Route {
+        const routeModel: Route = {
+            tokens: [],
+            regex: [],
+            middleware: [],
+            route: route.trim().replace(/^\/|$\//g, ""),
+            segments: [],
+        };
+        const tokens = routeModel.route.match(/\{.*?\}/g) ?? [];
+        for (let i = 0; i < tokens.length; i++) {
+            if (tokens[i].indexOf(":") !== -1) {
+                const token = tokens[i]
+                    .replace(/\{|\}/g, "")
+                    .trim()
+                    .replace(/\:.*/, "")
+                    .trim();
+                routeModel.tokens.push(token);
+                const regexString = tokens[i]
+                    .replace(/^\{|\}$/g, "")
+                    .trim()
+                    .replace(/.*?\:/, "")
+                    .trim();
+                routeModel.regex.push(new RegExp(regexString));
+                routeModel.route = routeModel.route.replace(tokens[i], `:${i}`);
+            } else {
+                routeModel.tokens.push(tokens[i].replace(/\{|\}/g, "").trim());
+                routeModel.regex.push(new RegExp(/.*/));
+                routeModel.route = routeModel.route.replace(tokens[i], `:${i}`);
+            }
+        }
+        routeModel.route = routeModel.route
+            .trim()
+            .replace(/\/+/g, "/")
+            .toLowerCase();
+        routeModel.segments = routeModel.route.split("/");
+        return routeModel;
     }
 
     public mount(element: HTMLElement): void {
+        if (this.mountingPoint === null) {
+            document.addEventListener("click", this.hijackClick, {
+                capture: true,
+            });
+            window.addEventListener("popstate", this.hijackPopstate);
+        }
         this.mountingPoint = element;
+        this.route(location.href, "replace");
+        this.dispatchEvent("ready");
+        console.log(this.routes);
     }
 
     public navigateTo(url: string, history: "replace" | "push" = "push"): void {
-        if (url.indexOf(location.origin) === 0 || url.indexOf("/") === 0) {
+        if (
+            url.indexOf(location.origin) === 0 ||
+            url.indexOf("/") === 0 ||
+            url.indexOf("#") === 0
+        ) {
             this.route(url, history);
         } else {
             location.href = url;
@@ -121,19 +280,17 @@ class Router {
         return module;
     }
 
-    private parseTokens(url: string, route: string): Tokens {
+    private parseTokens(url: string, route: Route): Tokens {
         const tokens: Tokens = {};
-        url = url.replace(/\?.*/, "").trim();
-        const urlSegments = url.split("/");
-        route = route.replace(/^\/|\/$/g, "").trim();
-        const routeSegments = route.split("/");
-        for (let i = 0; i < routeSegments.length; i++) {
-            if (
-                routeSegments[i].indexOf("{") === 0 &&
-                routeSegments[i].indexOf("}") === routeSegments[i].length - 1
-            ) {
-                const key = routeSegments[i].replace(/^\{|\}$/g, "").trim();
-                tokens[key] = urlSegments[i];
+        url = url
+            .replace(/\?.*|\#.*/, "")
+            .trim()
+            .replace(/\/+/g, "/");
+        const segments = url.split("/");
+        for (let i = 0; i < segments.length; i++) {
+            if (route.segments[i].indexOf(":") !== -1) {
+                const index = parseInt(route.segments[i].substring(1));
+                tokens[route.tokens[index]] = segments[i];
             }
         }
         return tokens;
@@ -160,44 +317,24 @@ class Router {
     }
 
     private async import(
-        data: string | Route,
+        route: Route,
         url: string,
-        route: string
+        tokens: Tokens,
+        params: Params
     ): Promise<HTMLElement> {
-        if (data === null) {
-            throw "Missing route data.";
+        if (this.modules?.[route.tagName]) {
+            return new this.modules[route.tagName].default(tokens, params);
         }
 
-        let tagName = null;
-        let file = null;
-        if (typeof data === "string") {
-            tagName = data;
-            file = `./${data}.js`;
-        } else {
-            tagName = data.tagName;
-            file = data.file;
-        }
-
-        const tokens = this.parseTokens(url, route);
-        const params = this.parseGetParams(url);
-
-        if (tagName === null || file === null) {
-            throw "Missing route data.";
-        }
-
-        if (this.modules?.[tagName]) {
-            return new this.modules[tagName].default(tokens, params);
-        }
-
-        let module = await this.importModule(file);
+        let module = await this.importModule(route.file);
         if (module === null) {
-            throw "Failed to dynamically import module.";
+            throw "/404";
         }
 
         if (!module?.default) {
             const key = Object.keys(module)?.[0] ?? null;
             if (!key) {
-                throw "ES Module is exporting an empty object.";
+                throw "/404";
             }
             module = Object.assign(
                 {
@@ -207,54 +344,63 @@ class Router {
             );
         }
 
-        this.modules[tagName] = module;
+        this.modules[route.tagName] = module;
 
-        if (!customElements.get(tagName)) {
-            customElements.define(tagName, module.default);
+        if (!customElements.get(route.tagName)) {
+            customElements.define(route.tagName, module.default);
         }
 
-        return new this.modules[tagName].default(tokens, params);
+        return new this.modules[route.tagName].default(tokens, params);
     }
 
-    private lookupRoute(url: string): string {
-        let route = null;
-        url = url
+    private findRouteModel(url: string): Route {
+        let model = null;
+        const cleanUrl = url
             .replace(/\?.*|\#.*/g, "")
+            .trim()
             .replace(/^\/|\/$/g, "")
-            .trim();
-        const urlSegments = url.split("/");
-        for (const key in this.router) {
-            const routeSegments = key.split("/");
-            if (routeSegments.length === urlSegments.length) {
-                let isMatch = true;
-                for (let i = 0; i < routeSegments.length; i++) {
-                    const routeSegment = routeSegments[i].trim().toLowerCase();
-                    if (routeSegment === "*") {
+            .trim()
+            .replace(/\/+/g, "/")
+            .toLowerCase();
+        const segments = cleanUrl.split("/");
+        for (let i = 0; i < this.routes.length; i++) {
+            const route = this.routes[i];
+            if (
+                route.segments.includes("*") ||
+                route.segments.length === segments.length
+            ) {
+                let failed = false;
+                for (let s = 0; s < segments.length; s++) {
+                    if (route.segments[s] === "*") {
                         break;
-                    } else if (
-                        routeSegment.indexOf("{") === 0 &&
-                        routeSegment.indexOf("}") === routeSegment.length - 1
-                    ) {
-                        continue;
-                    } else if (
-                        routeSegment === urlSegments[i].trim().toLowerCase()
-                    ) {
+                    } else if (route.segments[s].indexOf(":") !== -1) {
+                        const index = parseInt(route.segments[s].substring(1));
+                        if (route.regex[index].test(segments[s])) {
+                            continue;
+                        } else {
+                            failed = true;
+                            break;
+                        }
+                    } else if (route.segments[s] === segments[s]) {
                         continue;
                     } else {
-                        isMatch = false;
+                        failed = true;
                         break;
                     }
                 }
-                if (isMatch) {
-                    route = key;
+                if (!failed) {
+                    model = route;
                     break;
                 }
             }
         }
-        return route;
+        return model;
     }
 
-    private async route(url: string, history: "replace" | "push" = "push") {
+    private async route(
+        url: string,
+        history: "replace" | "push" = "push"
+    ): Promise<void> {
         url = url
             .replace(location.origin, "")
             .replace(/^\/|\/$/g, "")
@@ -264,31 +410,36 @@ class Router {
         } else {
             document.documentElement.setAttribute("router", "loading");
             this.dispatchEvent("loading");
-            let route = null;
-            if (this.router?.[url]) {
-                route = url;
-            } else {
-                route = this.lookupRoute(url);
-            }
-            if (route === null && this.router?.["404"]) {
-                url = `404`;
-                route = url;
-            }
             try {
-                const el = await this.import(this.router[route], url, route);
-                this.mountElement(el, url, history);
-                if (url.indexOf("#") !== -1) {
-                    this.pageJump(url.match(/\#.*/)[0], "auto");
+                const route = this.findRouteModel(url);
+                if (route === null) {
+                    throw "/404";
+                }
+                if (route?.redirect != undefined) {
+                    this.route(route.redirect, history);
+                    return;
+                }
+                const tokens = this.parseTokens(url, route);
+                const params = this.parseGetParams(url);
+                if (route.middleware.length) {
+                    for (let i = 0; i < route.middleware.length; i++) {
+                        route.middleware[i](tokens, params);
+                    }
+                }
+                if (route?.closure) {
+                    route.closure(tokens, params);
                 } else {
-                    el.scrollIntoView({
-                        block: "start",
-                        inline: "start",
-                        behavior: "auto",
-                    });
+                    const el = await this.import(route, url, tokens, params);
+                    this.mountElement(el, url, history);
+                    if (url.indexOf("#") !== -1) {
+                        this.pageJump(url.match(/\#.*/)[0], "auto");
+                    } else {
+                        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+                    }
                 }
             } catch (e) {
-                console.error(e);
-                location.href = `${location.origin}/404`;
+                console.error(`Failed to navigate pages. Redirecting to ${e}`);
+                this.navigateTo(e);
             }
             document.documentElement.setAttribute("router", "idling");
             this.dispatchEvent("loaded");
@@ -303,10 +454,9 @@ class Router {
 
 const router = new Router();
 const navigateTo = router.navigateTo.bind(router);
-const configure = router.configure.bind(router);
 const mount = router.mount.bind(router);
 const pageJump = router.pageJump.bind(router);
 const replaceState = router.replaceState.bind(router);
 const pushState = router.pushState.bind(router);
 
-export { navigateTo, configure, mount, pageJump, replaceState, pushState };
+export { navigateTo, router, mount, pageJump, replaceState, pushState };

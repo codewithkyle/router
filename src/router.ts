@@ -19,6 +19,14 @@ class RouterGroup {
         this.prefix += `/${prefix.trim().replace(/^\/|\/$/g, "")}`;
     }
 
+    public group(
+        settings: GroupSettings,
+        router: Router | RouterGroup,
+        closure: Function
+    ) {
+        this.router.group(settings, router, closure);
+    }
+
     public add(route: string, module: string | Function | Module): void {
         const cleanRoute = `${this.prefix}/${route
             .trim()

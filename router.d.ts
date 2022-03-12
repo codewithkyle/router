@@ -31,8 +31,21 @@ export type GroupSettings = {
 };
 
 declare class RouterGroup {
-    public add(): void;
-    public redirect(): void;
+    public group(
+        settings: GroupSettings,
+        rotuer: Router | RouterGroup,
+        closure: (router: Router | RouterGroup) => void
+    ): RouterGroup;
+    public add(
+        route: string,
+        module: string | Function | Module,
+        middleware?: Function | Array<Function>
+    ): void;
+    public redirect(
+        route: string,
+        url: string,
+        middleware?: Array<Function>
+    ): void;
 }
 
 declare class Router {

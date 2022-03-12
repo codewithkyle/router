@@ -51,14 +51,21 @@
                 class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase"
                 flex="items-center justify-center"
                 style="height: 36px"
-                >Go to test page string</a
+                >Test page string</a
             >
             <a
                 href="/blog/article/3"
                 class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase"
                 flex="items-center justify-center"
                 style="height: 36px"
-                >Go to test page number</a
+                >Test page number</a
+            >
+            <a
+                href="/blog/dead-link"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Dead test page</a
             >
             <a
                 href="/blog/article/example-article-page#test"
@@ -119,8 +126,11 @@
                 },
                 router,
                 (router) => {
-                    router.add("/article/{SLUG:\\w+}", "blog-article");
-                    router.add("/article/{SLUG:\\d+}", "blog-number");
+                    router.redirect("/dead-link", "/");
+                    router.group({ prefix: "/article" }, router, (router) => {
+                        router.add("/{SLUG:\\w+}", "blog-article");
+                        router.add("/{SLUG:\\d+}", "blog-number");
+                    });
                 }
             );
             router.redirect("/dead-link", "/");

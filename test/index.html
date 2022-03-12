@@ -124,10 +124,9 @@
                         }
                     },
                 },
-                router,
                 (router) => {
                     router.redirect("/dead-link", "/");
-                    router.group({ prefix: "/article" }, router, (router) => {
+                    router.group({ prefix: "/article" }, (router) => {
                         router.add("/{SLUG:\\w+}", "blog-article");
                         router.add("/{SLUG:\\d+}", "blog-number");
                     });

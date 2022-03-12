@@ -1,9 +1,9 @@
 import type { Route, Tokens, Params, GroupSettings, Module } from "../router";
 
 class RouterGroup {
-    public router: Router;
-    public prefix: string;
-    public middleware: Array<Function>;
+    private router: Router;
+    private prefix: string;
+    private middleware: Array<Function>;
 
     constructor(router: Router, prefix = "", middleware = []) {
         this.router = router;
@@ -19,12 +19,23 @@ class RouterGroup {
         this.prefix += `/${prefix.trim().replace(/^\/|\/$/g, "")}`;
     }
 
-    public group(
-        settings: GroupSettings,
-        router: Router | RouterGroup,
-        closure: Function
-    ) {
-        this.router.group(settings, router, closure);
+    public group(settings: GroupSettings, closure: Function) {
+        const routerGroup = new RouterGroup(this.router, this.prefix, [
+            ...this.middleware,
+        ]);
+        if (settings?.prefix?.length) {
+            routerGroup.appendPrefix(settings.prefix);
+        }
+        if (settings?.middleware) {
+            if (Array.isArray(settings.middleware)) {
+                for (let i = 0; i < settings.middleware.length; i++) {
+                    routerGroup.addMiddleware(settings.middleware[i]);
+                }
+            } else {
+                routerGroup.addMiddleware(settings.middleware);
+            }
+        }
+        closure(routerGroup);
     }
 
     public add(route: string, module: string | Function | Module): void {
@@ -59,19 +70,8 @@ class Router {
         this.modules = {};
     }
 
-    public group(
-        settings: GroupSettings,
-        router: Router | RouterGroup,
-        closure: Function
-    ) {
-        const routerGroup =
-            router instanceof Router
-                ? new RouterGroup(router)
-                : new RouterGroup(
-                      router.router,
-                      router.prefix,
-                      router.middleware
-                  );
+    public group(settings: GroupSettings, closure: Function) {
+        const routerGroup = new RouterGroup(this);
         if (settings?.prefix?.length) {
             routerGroup.appendPrefix(settings.prefix);
         }
@@ -180,6 +180,7 @@ class Router {
         this.mountingPoint = element;
         this.route(location.href, "replace");
         this.dispatchEvent("ready");
+        console.log(this.routes);
     }
 
     public navigateTo(url: string, history: "replace" | "push" = "push"): void {

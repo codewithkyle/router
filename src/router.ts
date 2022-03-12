@@ -121,6 +121,7 @@ class Router {
             regex: [],
             middleware: [],
             route: route.trim().replace(/^\/|$\//g, ""),
+            segments: [],
         };
         const tokens = routeModel.route.match(/\{.*?\}/g) ?? [];
         for (let i = 0; i < tokens.length; i++) {
@@ -144,6 +145,11 @@ class Router {
                 routeModel.route.replace(tokens[0], `:${i}`);
             }
         }
+        routeModel.route = routeModel.route
+            .trim()
+            .replace(/\/+/g, "/")
+            .toLowerCase();
+        routeModel.segments = routeModel.route.split("/");
         return routeModel;
     }
 
@@ -152,7 +158,11 @@ class Router {
     }
 
     public navigateTo(url: string, history: "replace" | "push" = "push"): void {
-        if (url.indexOf(location.origin) === 0 || url.indexOf("/") === 0) {
+        if (
+            url.indexOf(location.origin) === 0 ||
+            url.indexOf("/") === 0 ||
+            url.indexOf("#") === 0
+        ) {
             this.route(url, history);
         } else {
             location.href = url;
@@ -244,19 +254,17 @@ class Router {
         return module;
     }
 
-    private parseTokens(url: string, route: string): Tokens {
+    private parseTokens(url: string, route: Route): Tokens {
         const tokens: Tokens = {};
-        url = url.replace(/\?.*/, "").trim();
-        const urlSegments = url.split("/");
-        route = route.replace(/^\/|\/$/g, "").trim();
-        const routeSegments = route.split("/");
-        for (let i = 0; i < routeSegments.length; i++) {
-            if (
-                routeSegments[i].indexOf("{") === 0 &&
-                routeSegments[i].indexOf("}") === routeSegments[i].length - 1
-            ) {
-                const key = routeSegments[i].replace(/^\{|\}$/g, "").trim();
-                tokens[key] = urlSegments[i];
+        url = url
+            .replace(/\?.*|\#.*/, "")
+            .trim()
+            .replace(/\/+/g, "/");
+        const segments = url.split("/");
+        for (let i = 0; i < segments.length; i++) {
+            if (route.segments[i].indexOf(":")) {
+                const index = parseInt(route.segments[i].substring(1));
+                tokens[route.tokens[index]] = segments[i];
             }
         }
         return tokens;
@@ -283,36 +291,16 @@ class Router {
     }
 
     private async import(
-        data: string | Route,
+        route: Route,
         url: string,
-        route: string
+        tokens: Tokens,
+        params: Params
     ): Promise<HTMLElement> {
-        if (data === null) {
-            throw "Missing route data.";
+        if (this.modules?.[route.tagName]) {
+            return new this.modules[route.tagName].default(tokens, params);
         }
 
-        let tagName = null;
-        let file = null;
-        if (typeof data === "string") {
-            tagName = data;
-            file = `./${data}.js`;
-        } else {
-            tagName = data.tagName;
-            file = data.file;
-        }
-
-        const tokens = this.parseTokens(url, route);
-        const params = this.parseGetParams(url);
-
-        if (tagName === null || file === null) {
-            throw "Missing route data.";
-        }
-
-        if (this.modules?.[tagName]) {
-            return new this.modules[tagName].default(tokens, params);
-        }
-
-        let module = await this.importModule(file);
+        let module = await this.importModule(route.file);
         if (module === null) {
             throw "Failed to dynamically import module.";
         }
@@ -330,54 +318,63 @@ class Router {
             );
         }
 
-        this.modules[tagName] = module;
+        this.modules[route.tagName] = module;
 
-        if (!customElements.get(tagName)) {
-            customElements.define(tagName, module.default);
+        if (!customElements.get(route.tagName)) {
+            customElements.define(route.tagName, module.default);
         }
 
-        return new this.modules[tagName].default(tokens, params);
+        return new this.modules[route.tagName].default(tokens, params);
     }
 
-    private lookupRoute(url: string): string {
-        let route = null;
-        url = url
+    private findRouteModel(url: string): Route {
+        let model = null;
+        const cleanUrl = url
             .replace(/\?.*|\#.*/g, "")
+            .trim()
             .replace(/^\/|\/$/g, "")
-            .trim();
-        const urlSegments = url.split("/");
-        for (const key in this.routes) {
-            const routeSegments = key.split("/");
-            if (routeSegments.length === urlSegments.length) {
-                let isMatch = true;
-                for (let i = 0; i < routeSegments.length; i++) {
-                    const routeSegment = routeSegments[i].trim().toLowerCase();
-                    if (routeSegment === "*") {
+            .trim()
+            .replace(/\/+/g, "/")
+            .toLowerCase();
+        const segments = cleanUrl.split("/");
+        for (let i = 0; i < this.routes.length; i++) {
+            const route = this.routes[i];
+            if (
+                route.segments.includes("*") ||
+                route.segments.length === segments.length
+            ) {
+                let failed = false;
+                for (let s = 0; s < segments.length; s++) {
+                    if (route.segments[s] === "*") {
                         break;
-                    } else if (
-                        routeSegment.indexOf("{") === 0 &&
-                        routeSegment.indexOf("}") === routeSegment.length - 1
-                    ) {
-                        continue;
-                    } else if (
-                        routeSegment === urlSegments[i].trim().toLowerCase()
-                    ) {
+                    } else if (route.segments[s].indexOf(":")) {
+                        const index = parseInt(route.segments[s].substring(1));
+                        if (route.regex[index].test(segments[s])) {
+                            continue;
+                        } else {
+                            failed = true;
+                            break;
+                        }
+                    } else if (route.segments[s] === segments[s]) {
                         continue;
                     } else {
-                        isMatch = false;
+                        failed = true;
                         break;
                     }
                 }
-                if (isMatch) {
-                    route = key;
+                if (!failed) {
+                    model = route;
                     break;
                 }
             }
         }
-        return route;
+        return model;
     }
 
-    private async route(url: string, history: "replace" | "push" = "push") {
+    private async route(
+        url: string,
+        history: "replace" | "push" = "push"
+    ): Promise<void> {
         url = url
             .replace(location.origin, "")
             .replace(/^\/|\/$/g, "")
@@ -387,27 +384,31 @@ class Router {
         } else {
             document.documentElement.setAttribute("router", "loading");
             this.dispatchEvent("loading");
-            let route = null;
-            if (this.routes?.[url]) {
-                route = url;
-            } else {
-                route = this.lookupRoute(url);
-            }
-            if (route === null && this.routes?.["404"]) {
-                url = `404`;
-                route = url;
-            }
             try {
-                const el = await this.import(this.routes[route], url, route);
-                this.mountElement(el, url, history);
-                if (url.indexOf("#") !== -1) {
-                    this.pageJump(url.match(/\#.*/)[0], "auto");
+                const route = this.findRouteModel(url);
+                if (route === null) {
+                    throw `Failed to find route for ${url}`;
+                }
+                if (route?.redirect) {
+                    this.navigateTo(route.redirect);
+                    return;
+                }
+                const tokens = this.parseTokens(url, route);
+                const params = this.parseGetParams(url);
+                if (route?.closure) {
+                    route.closure(tokens, params);
                 } else {
-                    el.scrollIntoView({
-                        block: "start",
-                        inline: "start",
-                        behavior: "auto",
-                    });
+                    const el = await this.import(route, url, tokens, params);
+                    this.mountElement(el, url, history);
+                    if (url.indexOf("#") !== -1) {
+                        this.pageJump(url.match(/\#.*/)[0], "auto");
+                    } else {
+                        el.scrollIntoView({
+                            block: "start",
+                            inline: "start",
+                            behavior: "auto",
+                        });
+                    }
                 }
             } catch (e) {
                 console.error(e);
@@ -432,6 +433,3 @@ const replaceState = router.replaceState.bind(router);
 const pushState = router.pushState.bind(router);
 
 export { navigateTo, router, mount, pageJump, replaceState, pushState };
-
-// TEMP TEST DATA
-router.group({ prefix: "/v1/" }, (router) => {});

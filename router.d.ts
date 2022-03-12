@@ -9,6 +9,7 @@ export type Route = {
     tokens: Array<string>;
     closure?: Function;
     route: string;
+    segments: Array<string>;
 };
 
 export type Module = {
@@ -29,8 +30,31 @@ export type GroupSettings = {
     middleware?: Array<Function> | Function;
 };
 
+declare class RouterGroup {
+    public add(): void;
+    public redirect(): void;
+}
+
+declare class Router {
+    public group(
+        settings: GroupSettings,
+        closure: (router: Router | RouterGroup) => void
+    ): RouterGroup;
+    public add(
+        route: string,
+        module: string | Function | Module,
+        middleware?: Function | Array<Function>
+    ): void;
+    public redirect(
+        route: string,
+        url: string,
+        middleware?: Array<Function>
+    ): void;
+}
+
 declare const mount: (element: HTMLElement) => void;
 declare const navigateTo: (url: string, history?: "replace" | "push") => void;
 declare const pageJump: (hash: string, jump?: "auto" | "smooth") => void;
 declare const replaceState: (url: string) => void;
 declare const pushState: (url: string) => void;
+declare const router: Router;

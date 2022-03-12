@@ -1,27 +1,150 @@
-import { Router as RouterModel, Route, Tokens, Params } from "../router";
+import type { Route, Tokens, Params, GroupSettings, Module } from "../router";
+
+class RouterGroup {
+    private router: Router;
+    private prefix: string;
+    private middleware: Array<Function>;
+
+    constructor(router: Router) {
+        this.router = router;
+        this.prefix = "";
+        this.middleware = [];
+    }
+
+    public addMiddleware(closure: Function): void {
+        this.middleware.push(closure);
+    }
+
+    public appendPrefix(prefix: string): void {
+        this.prefix += `/${prefix.trim().replace(/^\/|\/$/g, "")}`;
+    }
+
+    public add(route: string, module: string | Function | Module): void {
+        const cleanRoute = `${this.prefix}/${route
+            .trim()
+            .replace(/^\/|\/$/g, "")}`;
+        this.router.add(cleanRoute, module, [...this.middleware]);
+    }
+}
 
 class Router {
-    public router: RouterModel;
+    public routes: Array<Route>;
     private mountingPoint: HTMLElement;
     private modules: {
         [tagName: string]: any;
     };
 
     constructor() {
-        this.router = {};
+        this.routes = [];
         this.mountingPoint = document.body;
         this.modules = {};
     }
 
-    public configure(router: RouterModel): void {
-        this.router = {};
-        for (const key in router) {
-            this.router[key.replace(/^\/|\/$/g, "")] = router[key];
-        }
+    public run(): void {
         this.route(location.href, "replace");
         document.addEventListener("click", this.hijackClick, { capture: true });
         window.addEventListener("popstate", this.hijackPopstate);
         this.dispatchEvent("ready");
+    }
+
+    public group(
+        settings: GroupSettings,
+        closure: (router: Router | RouterGroup) => void
+    ) {
+        const routerGroup =
+            closure.arguments[0] instanceof Router
+                ? new RouterGroup(this)
+                : closure.arguments[0];
+        if (settings?.prefix?.length) {
+            routerGroup.appendPrefix(settings.prefix);
+        }
+        if (settings?.middleware) {
+            if (Array.isArray(settings.middleware)) {
+                for (let i = 0; i < settings.middleware.length; i++) {
+                    routerGroup.addMiddleware(settings.middleware[i]);
+                }
+            } else {
+                routerGroup.addMiddleware(settings.middleware);
+            }
+        }
+        closure(routerGroup);
+    }
+
+    public add(
+        route: string,
+        module: string | Function | Module,
+        middleware: Function | Array<Function> = null
+    ): void {
+        const routeModel = this.prepareRouteModel(route);
+        if (typeof module === "string") {
+            routeModel.tagName = module;
+            if (module.indexOf("http") === 0) {
+                routeModel.file = module;
+            } else {
+                routeModel.file = `./${module
+                    .trim()
+                    .replace(/(\.js)$/, "")
+                    .trim()}.js`;
+            }
+        } else if (module instanceof Function) {
+            routeModel.closure = module;
+        } else {
+            routeModel.tagName = module.tagName;
+            routeModel.file = module.file;
+        }
+        if (middleware instanceof Function) {
+            routeModel.middleware.push(middleware);
+        } else if (Array.isArray(middleware)) {
+            routeModel.middleware = [...routeModel.middleware, ...middleware];
+        }
+        this.routes.push(routeModel);
+    }
+
+    public redirect(
+        route: string,
+        url: string,
+        middleware: Array<Function> = null
+    ): void {
+        const routeModel = this.prepareRouteModel(route);
+        if (middleware instanceof Function) {
+            routeModel.middleware.push(middleware);
+        } else if (Array.isArray(middleware)) {
+            routeModel.middleware = [...routeModel.middleware, ...middleware];
+        }
+        routeModel.redirect = url.trim().replace(/^\/|\/$/g, "");
+        this.routes.push(routeModel);
+    }
+
+    private prepareRouteModel(route: string): Route {
+        const routeModel: Route = {
+            tokens: [],
+            regex: [],
+            middleware: [],
+            route: route.trim().replace(/^\/|$\//g, ""),
+        };
+        const tokens = routeModel.route.match(/\{.*?\}/g) ?? [];
+        for (let i = 0; i < tokens.length; i++) {
+            if (tokens[0].indexOf(":")) {
+                const token = tokens[0]
+                    .replace(/\{|\}/g, "")
+                    .trim()
+                    .replace(/\:.*/, "")
+                    .trim();
+                routeModel.tokens.push(token);
+                const regexString = token[0]
+                    .replace(/\{|\}/g, "")
+                    .trim()
+                    .replace(/.*?\:/, "")
+                    .trim();
+                routeModel.regex.push(new RegExp(regexString));
+                routeModel.route.replace(tokens[0], `:${i}`);
+            } else {
+                routeModel.tokens.push(tokens[0].replace(/\{|\}/g, "").trim());
+                routeModel.regex.push(new RegExp(/.*/));
+                routeModel.route.replace(tokens[0], `:${i}`);
+            }
+        }
+        return routeModel;
     }
 
     public mount(element: HTMLElement): void {
@@ -223,7 +346,7 @@ class Router {
             .replace(/^\/|\/$/g, "")
             .trim();
         const urlSegments = url.split("/");
-        for (const key in this.router) {
+        for (const key in this.routes) {
             const routeSegments = key.split("/");
             if (routeSegments.length === urlSegments.length) {
                 let isMatch = true;
@@ -265,17 +388,17 @@ class Router {
             document.documentElement.setAttribute("router", "loading");
             this.dispatchEvent("loading");
             let route = null;
-            if (this.router?.[url]) {
+            if (this.routes?.[url]) {
                 route = url;
             } else {
                 route = this.lookupRoute(url);
             }
-            if (route === null && this.router?.["404"]) {
+            if (route === null && this.routes?.["404"]) {
                 url = `404`;
                 route = url;
             }
             try {
-                const el = await this.import(this.router[route], url, route);
+                const el = await this.import(this.routes[route], url, route);
                 this.mountElement(el, url, history);
                 if (url.indexOf("#") !== -1) {
                     this.pageJump(url.match(/\#.*/)[0], "auto");
@@ -303,10 +426,12 @@ class Router {
 
 const router = new Router();
 const navigateTo = router.navigateTo.bind(router);
-const configure = router.configure.bind(router);
 const mount = router.mount.bind(router);
 const pageJump = router.pageJump.bind(router);
 const replaceState = router.replaceState.bind(router);
 const pushState = router.pushState.bind(router);
 
-export { navigateTo, configure, mount, pageJump, replaceState, pushState };
+export { navigateTo, router, mount, pageJump, replaceState, pushState };
+
+// TEMP TEST DATA
+router.group({ prefix: "/v1/" }, (router) => {});

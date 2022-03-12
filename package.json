@@ -1,7 +1,7 @@
 {
     "name": "@codewithkyle/router",
     "version": "2.0.0",
-    "description": "A lightweight lazy loading Web Component based declarative routing library.",
+    "description": "A Web Component based declarative routing library.",
     "main": "router.min.mjs",
     "types": "router.d.ts",
     "files": [

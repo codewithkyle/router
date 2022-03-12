@@ -1,65 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Router</title>
-	<link href="https://unpkg.com/brixi@0.3.3/brixi.min.css" rel="stylesheet">
-	<style>
-		*{
-			box-sizing: border-box;
-		}
-		body{
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-		}
-		button{
-			border: none;
-			outline: none;
-			background: transparent;
-		}
-        a{
-            text-decoration: none;
-        }
-        html[router="loading"] * {
-            cursor: wait !important;
-        }
-	</style>
-    <script>
-        (function(){
-            var redirect = sessionStorage.redirect;
-            delete sessionStorage.redirect;
-            if (redirect && redirect != location.href){
-                history.replaceState(null, null, redirect);
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Router</title>
+        <link
+            href="https://unpkg.com/brixi@0.3.3/brixi.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                box-sizing: border-box;
             }
-        })();
-    </script>
-</head>
-<body class="m-0 bg-grey-200 w-screen min-h-screen block">
-    <header class="w-full text-center fixed t-0 l-0" flex="items-center justify-center">
-	    <a href="/blog/article/example-article-page" class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Go to test page</a>
-        <a href="/blog/article/example-article-page#test" class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Naviagte and page jump</a>
-        <a href="#test" class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Page jump</a>
-        <a history="replace" href="/" class="bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer inline-block shadow-md text-uppercase" flex="items-center justify-center" style="height: 36px;">Go Home</a>
-    </header>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                    Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+                    "Helvetica Neue", sans-serif;
+            }
+            button {
+                border: none;
+                outline: none;
+                background: transparent;
+            }
+            a {
+                text-decoration: none;
+            }
+            html[router="loading"] * {
+                cursor: wait !important;
+            }
+        </style>
+        <script>
+            (function () {
+                var redirect = sessionStorage.redirect;
+                delete sessionStorage.redirect;
+                if (redirect && redirect != location.href) {
+                    history.replaceState(null, null, redirect);
+                }
+            })();
+        </script>
+    </head>
+    <body class="m-0 bg-grey-200 w-screen min-h-screen block">
+        <header
+            class="w-full text-center fixed t-0 l-0"
+            flex="items-center justify-center"
+        >
+            <a
+                href="/blog/article/example-article-page"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Go to test page string</a
+            >
+            <a
+                href="/blog/article/3"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Go to test page number</a
+            >
+            <a
+                href="/blog/article/example-article-page#test"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Naviagte and page jump</a
+            >
+            <a
+                href="#test"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm inline-block font-medium m-0.5 cursor-pointer shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Page jump</a
+            >
+            <a
+                history="replace"
+                href="/"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer inline-block shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Go Home</a
+            >
+            <a
+                href="/dead-link"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer inline-block shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Redirect</a
+            >
+            <a
+                href="/closure"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer inline-block shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Closure</a
+            >
+        </header>
 
-    <main></main>
+        <main></main>
 
-	<script type="module">
-        import { configure, navigateTo, mount } from "/router.min.mjs";
-        const main = document.body.querySelector("main");
-        mount(main);
-        configure({
-            "/blog/article/{SLUG}": "blog-article",
-            "/": {
+        <script type="module">
+            import { router, mount } from "/router.min.mjs";
+
+            router.add("/", {
                 tagName: "homepage-component",
-                file: "/homepage.js",
-            },
-            "404": "missing-page",
-        });
-        document.addEventListener("router:ready", () => { console.log("Ready") });
-        document.addEventListener("router:loaded", () => { console.log("Loaded") });
-        document.addEventListener("router:loading", () => { console.log("Loading") });
-	</script>
-</body>
+                file: "./homepage.js",
+            });
+            router.group(
+                {
+                    prefix: "/blog",
+                    middleware: () => {
+                        if (!sessionStorage.getItem("closure")) {
+                            alert("Access blocked until you run the closure");
+                            location.href = location.origin;
+                        }
+                    },
+                },
+                router,
+                (router) => {
+                    router.add("/article/{SLUG:\\w+}", "blog-article");
+                    router.add("/article/{SLUG:\\d+}", "blog-number");
+                }
+            );
+            router.redirect("/dead-link", "/");
+            router.add("/closure", () => {
+                console.log("We ran the closure");
+                sessionStorage.setItem("closure", "true");
+            });
+
+            const main = document.body.querySelector("main");
+            mount(main);
+
+            document.addEventListener("router:ready", () => {
+                console.log("Ready");
+            });
+            document.addEventListener("router:loaded", () => {
+                console.log("Loaded");
+            });
+            document.addEventListener("router:loading", () => {
+                console.log("Loading");
+            });
+        </script>
+    </body>
 </html>

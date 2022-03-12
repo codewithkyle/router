@@ -36,25 +36,17 @@ class Router {
 
     constructor() {
         this.routes = [];
-        this.mountingPoint = document.body;
+        this.mountingPoint = null;
         this.modules = {};
-    }
-
-    public run(): void {
-        this.route(location.href, "replace");
-        document.addEventListener("click", this.hijackClick, { capture: true });
-        window.addEventListener("popstate", this.hijackPopstate);
-        this.dispatchEvent("ready");
     }
 
     public group(
         settings: GroupSettings,
-        closure: (router: Router | RouterGroup) => void
+        router: Router | RouterGroup,
+        closure: Function
     ) {
         const routerGroup =
-            closure.arguments[0] instanceof Router
-                ? new RouterGroup(this)
-                : closure.arguments[0];
+            router instanceof Router ? new RouterGroup(router) : router;
         if (settings?.prefix?.length) {
             routerGroup.appendPrefix(settings.prefix);
         }
@@ -125,24 +117,25 @@ class Router {
         };
         const tokens = routeModel.route.match(/\{.*?\}/g) ?? [];
         for (let i = 0; i < tokens.length; i++) {
-            if (tokens[0].indexOf(":")) {
-                const token = tokens[0]
+            if (tokens[i].indexOf(":") !== -1) {
+                const token = tokens[i]
                     .replace(/\{|\}/g, "")
                     .trim()
                     .replace(/\:.*/, "")
                     .trim();
                 routeModel.tokens.push(token);
-                const regexString = token[0]
-                    .replace(/\{|\}/g, "")
+                const regexString = tokens[i]
+                    .replace(/^\{|\}$/g, "")
                     .trim()
                     .replace(/.*?\:/, "")
                     .trim();
+                console.log(regexString);
                 routeModel.regex.push(new RegExp(regexString));
-                routeModel.route.replace(tokens[0], `:${i}`);
+                routeModel.route = routeModel.route.replace(tokens[i], `:${i}`);
             } else {
-                routeModel.tokens.push(tokens[0].replace(/\{|\}/g, "").trim());
+                routeModel.tokens.push(tokens[i].replace(/\{|\}/g, "").trim());
                 routeModel.regex.push(new RegExp(/.*/));
-                routeModel.route.replace(tokens[0], `:${i}`);
+                routeModel.route = routeModel.route.replace(tokens[i], `:${i}`);
             }
         }
         routeModel.route = routeModel.route
@@ -154,7 +147,15 @@ class Router {
     }
 
     public mount(element: HTMLElement): void {
+        if (this.mountingPoint === null) {
+            document.addEventListener("click", this.hijackClick, {
+                capture: true,
+            });
+            window.addEventListener("popstate", this.hijackPopstate);
+        }
         this.mountingPoint = element;
+        this.route(location.href, "replace");
+        this.dispatchEvent("ready");
     }
 
     public navigateTo(url: string, history: "replace" | "push" = "push"): void {
@@ -262,7 +263,7 @@ class Router {
             .replace(/\/+/g, "/");
         const segments = url.split("/");
         for (let i = 0; i < segments.length; i++) {
-            if (route.segments[i].indexOf(":")) {
+            if (route.segments[i].indexOf(":") !== -1) {
                 const index = parseInt(route.segments[i].substring(1));
                 tokens[route.tokens[index]] = segments[i];
             }
@@ -337,6 +338,7 @@ class Router {
             .replace(/\/+/g, "/")
             .toLowerCase();
         const segments = cleanUrl.split("/");
+        console.log(url, segments, this.routes);
         for (let i = 0; i < this.routes.length; i++) {
             const route = this.routes[i];
             if (
@@ -347,7 +349,7 @@ class Router {
                 for (let s = 0; s < segments.length; s++) {
                     if (route.segments[s] === "*") {
                         break;
-                    } else if (route.segments[s].indexOf(":")) {
+                    } else if (route.segments[s].indexOf(":") !== -1) {
                         const index = parseInt(route.segments[s].substring(1));
                         if (route.regex[index].test(segments[s])) {
                             continue;
@@ -389,8 +391,8 @@ class Router {
                 if (route === null) {
                     throw `Failed to find route for ${url}`;
                 }
-                if (route?.redirect) {
-                    this.navigateTo(route.redirect);
+                if (route?.redirect != undefined) {
+                    this.route(route.redirect, history);
                     return;
                 }
                 const tokens = this.parseTokens(url, route);
@@ -403,16 +405,12 @@ class Router {
                     if (url.indexOf("#") !== -1) {
                         this.pageJump(url.match(/\#.*/)[0], "auto");
                     } else {
-                        el.scrollIntoView({
-                            block: "start",
-                            inline: "start",
-                            behavior: "auto",
-                        });
+                        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
                     }
                 }
             } catch (e) {
                 console.error(e);
-                location.href = `${location.origin}/404`;
+                //location.href = `${location.origin}/404`;
             }
             document.documentElement.setAttribute("router", "idling");
             this.dispatchEvent("loaded");

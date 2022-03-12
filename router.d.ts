@@ -1,5 +1,3 @@
-export type WebComponentTagName = string;
-
 export type Route = {
     middleware: Array<Function>;
     redirect?: string;
@@ -33,7 +31,6 @@ export type GroupSettings = {
 declare class RouterGroup {
     public group(
         settings: GroupSettings,
-        rotuer: Router | RouterGroup,
         closure: (router: Router | RouterGroup) => void
     ): RouterGroup;
     public add(

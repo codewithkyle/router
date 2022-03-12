@@ -1,14 +1,14 @@
 import type { Route, Tokens, Params, GroupSettings, Module } from "../router";
 
 class RouterGroup {
-    private router: Router;
-    private prefix: string;
-    private middleware: Array<Function>;
+    public router: Router;
+    public prefix: string;
+    public middleware: Array<Function>;
 
-    constructor(router: Router) {
+    constructor(router: Router, prefix = "", middleware = []) {
         this.router = router;
-        this.prefix = "";
-        this.middleware = [];
+        this.prefix = prefix;
+        this.middleware = middleware;
     }
 
     public addMiddleware(closure: Function): void {
@@ -24,6 +24,17 @@ class RouterGroup {
             .trim()
             .replace(/^\/|\/$/g, "")}`;
         this.router.add(cleanRoute, module, [...this.middleware]);
+    }
+
+    public redirect(
+        route: string,
+        url: string,
+        middleware: Array<Function> = null
+    ): void {
+        const cleanRoute = `${this.prefix}/${route
+            .trim()
+            .replace(/^\/|\/$/g, "")}`;
+        this.router.redirect(cleanRoute, url, [...this.middleware]);
     }
 }
 
@@ -46,7 +57,13 @@ class Router {
         closure: Function
     ) {
         const routerGroup =
-            router instanceof Router ? new RouterGroup(router) : router;
+            router instanceof Router
+                ? new RouterGroup(router)
+                : new RouterGroup(
+                      router.router,
+                      router.prefix,
+                      router.middleware
+                  );
         if (settings?.prefix?.length) {
             routerGroup.appendPrefix(settings.prefix);
         }

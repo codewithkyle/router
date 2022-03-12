@@ -16,7 +16,7 @@
     "author": "Kyle Andrews <codingwithkyle@gmail.com>",
     "license": "MIT",
     "devDependencies": {
-        "esbuild": "^0.10.1",
-        "serve": "^11.3.2"
+        "esbuild": "^0.14.25",
+        "serve": "^13.0.2"
     }
 }

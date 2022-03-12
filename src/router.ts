@@ -129,7 +129,6 @@ class Router {
                     .trim()
                     .replace(/.*?\:/, "")
                     .trim();
-                console.log(regexString);
                 routeModel.regex.push(new RegExp(regexString));
                 routeModel.route = routeModel.route.replace(tokens[i], `:${i}`);
             } else {
@@ -303,13 +302,13 @@ class Router {
 
         let module = await this.importModule(route.file);
         if (module === null) {
-            throw "Failed to dynamically import module.";
+            throw "/404";
         }
 
         if (!module?.default) {
             const key = Object.keys(module)?.[0] ?? null;
             if (!key) {
-                throw "ES Module is exporting an empty object.";
+                throw "/404";
             }
             module = Object.assign(
                 {
@@ -338,7 +337,6 @@ class Router {
             .replace(/\/+/g, "/")
             .toLowerCase();
         const segments = cleanUrl.split("/");
-        console.log(url, segments, this.routes);
         for (let i = 0; i < this.routes.length; i++) {
             const route = this.routes[i];
             if (
@@ -389,7 +387,7 @@ class Router {
             try {
                 const route = this.findRouteModel(url);
                 if (route === null) {
-                    throw `Failed to find route for ${url}`;
+                    throw "/404";
                 }
                 if (route?.redirect != undefined) {
                     this.route(route.redirect, history);
@@ -397,6 +395,11 @@ class Router {
                 }
                 const tokens = this.parseTokens(url, route);
                 const params = this.parseGetParams(url);
+                if (route.middleware.length) {
+                    for (let i = 0; i < route.middleware.length; i++) {
+                        route.middleware[i](tokens, params);
+                    }
+                }
                 if (route?.closure) {
                     route.closure(tokens, params);
                 } else {
@@ -409,8 +412,8 @@ class Router {
                     }
                 }
             } catch (e) {
-                console.error(e);
-                //location.href = `${location.origin}/404`;
+                console.error(`Failed to navigate pages. Redirecting to ${e}`);
+                this.navigateTo(e);
             }
             document.documentElement.setAttribute("router", "idling");
             this.dispatchEvent("loaded");

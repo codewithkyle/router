@@ -1,4 +1,4 @@
-import type { Route, Tokens, Params, GroupSettings, Module } from "../router";
+import type { Route, Tokens, Params, GroupSettings, Module, Data, LoadedDetails, LoadingDetails } from "../router";
 
 class RouterGroup {
     private router: Router;
@@ -63,11 +63,18 @@ class Router {
     private modules: {
         [tagName: string]: any;
     };
+    private lastRoute: {
+        path: string,
+        hash: string,
+        tokens: Tokens,
+        params: Params,
+    };
 
     constructor() {
         this.routes = [];
         this.mountingPoint = null;
         this.modules = {};
+        this.lastRoute = null;
     }
 
     public group(settings: GroupSettings, closure: Function) {
@@ -320,10 +327,11 @@ class Router {
         route: Route,
         url: string,
         tokens: Tokens,
-        params: Params
+        params: Params,
+        data: Data,
     ): Promise<HTMLElement> {
         if (this.modules?.[route.tagName]) {
-            return new this.modules[route.tagName].default(tokens, params);
+            return new this.modules[route.tagName].default(tokens, params, data);
         }
 
         let module = await this.importModule(route.file);
@@ -350,7 +358,7 @@ class Router {
             customElements.define(route.tagName, module.default);
         }
 
-        return new this.modules[route.tagName].default(tokens, params);
+        return new this.modules[route.tagName].default(tokens, params, data);
     }
 
     private findRouteModel(url: string): Route {
@@ -401,15 +409,29 @@ class Router {
         url: string,
         history: "replace" | "push" = "push"
     ): Promise<void> {
+        // Clean URL
         url = url
             .replace(location.origin, "")
             .replace(/^\/|\/$/g, "")
             .trim();
+        // Begin routing
+        const data:Data = {};
+        let params:Params = this.parseGetParams(url);
+        let tokens:Tokens = {};
+        let hash = "";
+        let path = `/${url.replace(/(\?|\#).*/, "").trim()}`;
+        if (url.indexOf("#") !== -1) {
+            hash = url.match(/\#.*/)[0];
+        }
         if (url.indexOf("#") === 0) {
             this.pageJump(url);
         } else {
             document.documentElement.setAttribute("router", "loading");
-            this.dispatchEvent("loading");
+            this.dispatchEvent("loading", {
+                path: path,
+                hash: hash,
+                params: params,
+            });
             try {
                 const route = this.findRouteModel(url);
                 if (route === null) {
@@ -419,35 +441,59 @@ class Router {
                     this.route(route.redirect, history);
                     return;
                 }
-                const tokens = this.parseTokens(url, route);
-                const params = this.parseGetParams(url);
+                tokens = this.parseTokens(url, route);
                 if (route.middleware.length) {
                     for (const middleware of route.middleware) {
-                        await middleware(tokens, params);
+                        await middleware({...tokens}, {...params}, data);
                     }
                 }
                 if (route?.closure) {
-                    await route.closure(tokens, params);
+                    await route.closure({...tokens}, {...params}, data);
                 } else {
-                    const el = await this.import(route, url, tokens, params);
+                    const el = await this.import(route, url, {...tokens}, {...params}, {...data});
                     this.mountElement(el, url, history);
-                    if (url.indexOf("#") !== -1) {
-                        this.pageJump(url.match(/\#.*/)[0], "auto");
+                    if (hash.length) {
+                        this.pageJump(hash, "auto");
                     } else {
                         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
                     }
                 }
+                document.documentElement.setAttribute("router", "idling");
+                this.dispatchEvent("loaded", {
+                    path: path,
+                    hash: hash,
+                    tokens: tokens,
+                    params: params,
+                    data: data,
+                });
+                this.lastRoute = {
+                    path: path,
+                    hash: hash,
+                    tokens: tokens,
+                    params: params,
+                };
             } catch (e) {
                 console.error(`Failed to navigate pages. Redirecting to ${e}`);
                 this.navigateTo(e);
             }
-            document.documentElement.setAttribute("router", "idling");
-            this.dispatchEvent("loaded");
         }
     }
 
-    private dispatchEvent(type: "loading" | "loaded" | "ready") {
-        var event = new CustomEvent(`router:${type}`);
+    private dispatchEvent(type: "loading" | "loaded" | "ready", details:LoadingDetails|LoadedDetails = null) {
+        let event:CustomEvent;
+        switch(type) {
+            case "ready":
+                event = new CustomEvent(`router:${type}`);
+                break;
+            default:
+                event = new CustomEvent(`router:${type}`, {
+                    detail: {
+                        outgoing: this.lastRoute,
+                        incoming: details,
+                    },
+                });
+                break;
+        }
         document.dispatchEvent(event);
     }
 }

@@ -10,6 +10,20 @@ export type Route = {
     segments: Array<string>;
 };
 
+export type LoadingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+};
+
+export type LoadedDetails = {
+    path: string,
+    hash: string,
+    tokens: Tokens,
+    params: Params,
+    data: Data,
+};
+
 export type Module = {
     tagName: string;
     file: string;
@@ -21,6 +35,10 @@ export type Tokens = {
 
 export type Params = {
     [param: string]: string | Array<string>;
+};
+
+export type Data = {
+    [key:string]: any;
 };
 
 export type GroupSettings = {

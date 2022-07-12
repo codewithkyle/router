@@ -108,6 +108,21 @@
         <main></main>
 
         <script type="module">
+            // Custom events
+            document.addEventListener("router:ready", (e) => {
+                const details = e.detail;
+                console.log("Ready", details);
+            });
+            document.addEventListener("router:loaded", (e) => {
+                const details = e.detail;
+                console.log("Loaded", details);
+            });
+            document.addEventListener("router:loading", (e) => {
+                const details = e.detail;
+                console.log("Loading", details);
+            });
+
+            // Router
             import { router, mount } from "/router.min.mjs";
 
             router.add("/", {
@@ -117,11 +132,12 @@
             router.group(
                 {
                     prefix: "/blog",
-                    middleware: () => {
+                    middleware: (tokens, params, data) => {
                         if (!sessionStorage.getItem("closure")) {
                             alert("Access blocked until you run the closure");
                             throw location.origin;
                         }
+                        data.access = "granted";
                     },
                 },
                 (router) => {
@@ -144,16 +160,6 @@
 
             const main = document.body.querySelector("main");
             mount(main);
-
-            document.addEventListener("router:ready", () => {
-                console.log("Ready");
-            });
-            document.addEventListener("router:loaded", () => {
-                console.log("Loaded");
-            });
-            document.addEventListener("router:loading", () => {
-                console.log("Loading");
-            });
         </script>
     </body>
 </html>

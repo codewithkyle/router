@@ -133,7 +133,11 @@
                 }
             );
             router.redirect("/dead-link", "/");
-            router.add("/closure", () => {
+            router.add("/closure", async () => {
+                alert("Starting async callback, access will be granted in 5 seconds");
+                await new Promise(resolve => {
+                    setTimeout(resolve, 5000);
+                });
                 sessionStorage.setItem("closure", "true");
                 alert("You may now access the test pages.");
             });

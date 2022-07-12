@@ -422,12 +422,12 @@ class Router {
                 const tokens = this.parseTokens(url, route);
                 const params = this.parseGetParams(url);
                 if (route.middleware.length) {
-                    for (let i = 0; i < route.middleware.length; i++) {
-                        route.middleware[i](tokens, params);
+                    for (const middleware of route.middleware) {
+                        await middleware(tokens, params);
                     }
                 }
                 if (route?.closure) {
-                    route.closure(tokens, params);
+                    await route.closure(tokens, params);
                 } else {
                     const el = await this.import(route, url, tokens, params);
                     this.mountElement(el, url, history);

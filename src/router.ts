@@ -1,4 +1,4 @@
-import type { Route, Tokens, Params, GroupSettings, Module, Data, LoadedDetails, LoadingDetails } from "../router";
+import type { Route, Tokens, Params, GroupSettings, Module, Data, LoadedDetails, LoadingDetails, PreloadingDetails } from "../router";
 
 class RouterGroup {
     private router: Router;
@@ -427,7 +427,7 @@ class Router {
             this.pageJump(url);
         } else {
             document.documentElement.setAttribute("router", "loading");
-            this.dispatchEvent("loading", {
+            this.dispatchEvent("preloading", {
                 path: path,
                 hash: hash,
                 params: params,
@@ -447,6 +447,13 @@ class Router {
                         await middleware({...tokens}, {...params}, data);
                     }
                 }
+                this.dispatchEvent("loading", {
+                    path: path,
+                    hash: hash,
+                    params: params,
+                    tokens: tokens,
+                    data: data,
+                });
                 if (route?.closure) {
                     await route.closure({...tokens}, {...params}, data);
                 } else {
@@ -479,7 +486,7 @@ class Router {
         }
     }
 
-    private dispatchEvent(type: "loading" | "loaded" | "ready", details:LoadingDetails|LoadedDetails = null) {
+    private dispatchEvent(type: "loading" | "loaded" | "ready" | "preloading", details:LoadingDetails|LoadedDetails|PreloadingDetails = null) {
         let event:CustomEvent;
         switch(type) {
             case "ready":

@@ -10,10 +10,16 @@ export type Route = {
     segments: Array<string>;
 };
 
+export type PreloadingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+};
 export type LoadingDetails = {
     path: string,
     hash: string,
     params: Params,
+    tokens: Tokens,
 };
 
 export type LoadedDetails = {

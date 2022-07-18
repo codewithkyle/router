@@ -431,8 +431,6 @@ class Router {
                         if (this.autoTransitionTimer !== null && this.autoTransitionTimer !== Infinity && this.autoTransitionTimer !== -1){
                             timeoutId = setTimeout(resolve, this.autoTransitionTimer);
                         }
-                        // What happens when we drop this promise? Does this cause a memory leak?
-                        // I'm assuming that GC will cleanup this local promise after the transitionPromise variable & resolve references are dead
                         this.transitionPromises = {
                             resolve: resolve,
                             timeoutId: timeoutId,

@@ -13,12 +13,51 @@ class Router {
         tokens: Tokens,
         params: Params,
     };
+    private useTransitions:boolean;
+    private autoTransitionTimer: number|null; // ms
+    private transitionPromises: {
+        resolve: Function,
+        timeoutId: number|null,
+    };
 
     constructor() {
         this.routes = [];
         this.mountingPoint = null;
         this.modules = {};
         this.lastRoute = null;
+        this.autoTransitionTimer = 5000;
+        this.useTransitions = false;
+        this.transitionPromises = {
+            resolve: () => {},
+            timeoutId: null,
+        };
+    }
+
+    public enableTransitions(): void {
+        this.useTransitions = true;
+    }
+
+    public disableTransitions():void {
+        this.useTransitions = false;
+    }
+
+    /**
+     * Amount of time (milliseconds) that can pass before automatically resolving the transition.
+     * Accepts any number greater or equal to -1, null, or Infinity.
+     * Values of -1, null, or Infinity will prevent the automatic transition resolution. This is NOT recommended.
+    */
+    public setTransitionTimer(ms:number|null): void {
+        if (ms < -1){
+            throw "Timer value out of bounds. Value must be greater than or equal to -1.";
+        }
+        this.autoTransitionTimer = ms;
+    }
+
+    public continue(){
+        if (this.transitionPromises.timeoutId !== null){
+            clearTimeout(this.transitionPromises.timeoutId);
+        }
+        this.transitionPromises.resolve(); 
     }
 
     public group(settings: GroupSettings, closure: Function) {
@@ -233,6 +272,9 @@ class Router {
 
     private parseTokens(url: string, route: Route): Tokens {
         const tokens: Tokens = {};
+        if (route === null){
+            return tokens;
+        }
         url = url
             .replace(/\?.*|\#.*/, "")
             .trim()
@@ -377,15 +419,29 @@ class Router {
                 params: params,
             });
             try {
+                // Begin routing logic
                 const route = this.findRouteModel(url);
-                if (route === null) {
-                    throw "/404";
-                }
-                if (route?.redirect != undefined) {
-                    this.route(route.redirect, history);
-                    return;
-                }
                 tokens = this.parseTokens(url, route);
+
+                // Begin optional transition animation logic
+                let transitionPromise = null;
+                if (this.useTransitions){
+                    transitionPromise = new Promise(resolve => {
+                        let timeoutId:number|null = null;
+                        if (this.autoTransitionTimer !== null && this.autoTransitionTimer !== Infinity && this.autoTransitionTimer !== -1){
+                            timeoutId = setTimeout(resolve, this.autoTransitionTimer);
+                        }
+                        // What happens when we drop this promise? Does this cause a memory leak?
+                        // I'm assuming that GC will cleanup this local promise after the transitionPromise variable & resolve references are dead
+                        this.transitionPromises = {
+                            resolve: resolve,
+                            timeoutId: timeoutId,
+                        };
+                    });
+                }
+
+                // Notify devs that we are now loading
+                // Dispatched after transition logic to prevent race conditions
                 this.dispatchEvent("loading", {
                     path: path,
                     hash: hash,
@@ -393,12 +449,22 @@ class Router {
                     tokens: tokens,
                     data: data,
                 });
+
+                // Dead route redirect
+                if (route === null) {
+                    throw "/404";
+                }
+
+                // Routing logic
                 if (route.middleware.length) {
                     for (const middleware of route.middleware) {
                         await middleware({...tokens}, {...params}, data);
                     }
                 }
-                if (route?.closure) {
+                if (route?.redirect != undefined) {
+                    this.route(route.redirect, history);
+                    return;
+                } else if (route?.closure) {
                     await route.closure({...tokens}, {...params}, data);
                 } else {
                     const el = await this.import(route, url, {...tokens}, {...params}, {...data});
@@ -409,6 +475,13 @@ class Router {
                         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
                     }
                 }
+
+                // End transition animation logic
+                if (transitionPromise != null){
+                    await transitionPromise;
+                }
+
+                // Routing finished successfully
                 document.documentElement.setAttribute("router", "idling");
                 this.dispatchEvent("loaded", {
                     path: path,

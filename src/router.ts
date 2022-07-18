@@ -442,11 +442,6 @@ class Router {
                     return;
                 }
                 tokens = this.parseTokens(url, route);
-                if (route.middleware.length) {
-                    for (const middleware of route.middleware) {
-                        await middleware({...tokens}, {...params}, data);
-                    }
-                }
                 this.dispatchEvent("loading", {
                     path: path,
                     hash: hash,
@@ -454,6 +449,11 @@ class Router {
                     tokens: tokens,
                     data: data,
                 });
+                if (route.middleware.length) {
+                    for (const middleware of route.middleware) {
+                        await middleware({...tokens}, {...params}, data);
+                    }
+                }
                 if (route?.closure) {
                     await route.closure({...tokens}, {...params}, data);
                 } else {

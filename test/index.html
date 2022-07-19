@@ -18,6 +18,7 @@
                     Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
                     "Helvetica Neue", sans-serif;
                 overflow-y: scroll;
+                transition: opacity 300ms ease-in-out;
             }
             button {
                 border: none;
@@ -43,7 +44,7 @@
     </head>
     <body class="m-0 bg-grey-200 w-screen min-h-screen block">
         <header
-            class="w-full text-center fixed t-0 l-0"
+            class="w-full text-center block"
             flex="items-center justify-center"
         >
             <a
@@ -107,8 +108,12 @@
 
         <main></main>
 
-        <script type="module">
-            import { router, mount } from "/router.min.mjs";
+        <script type="module"> 
+
+            // Router
+            import { router, mount, transition } from "/router.min.mjs";
+
+            router.enableTransitions();
 
             router.add("/", {
                 tagName: "homepage-component",
@@ -117,11 +122,12 @@
             router.group(
                 {
                     prefix: "/blog",
-                    middleware: () => {
+                    middleware: (tokens, params, data) => {
                         if (!sessionStorage.getItem("closure")) {
                             alert("Access blocked until you run the closure");
                             throw location.origin;
                         }
+                        data.access = "granted";
                     },
                 },
                 (router) => {
@@ -133,7 +139,11 @@
                 }
             );
             router.redirect("/dead-link", "/");
-            router.add("/closure", () => {
+            router.add("/closure", async () => {
+                alert("Starting async callback, access will be granted in 5 seconds");
+                await new Promise(resolve => {
+                    setTimeout(resolve, 5000);
+                });
                 sessionStorage.setItem("closure", "true");
                 alert("You may now access the test pages.");
             });
@@ -141,14 +151,34 @@
             const main = document.body.querySelector("main");
             mount(main);
 
-            document.addEventListener("router:ready", () => {
-                console.log("Ready");
+            // Custom events
+            document.addEventListener("router:ready", (e) => {
+                const details = e.detail;
+                console.log("Ready", details);
             });
-            document.addEventListener("router:loaded", () => {
-                console.log("Loaded");
+            document.addEventListener("router:loaded", (e) => { 
+                const details = e.detail;
+                document.body.style.opacity = "1";
+                console.log("Loaded", details);
             });
-            document.addEventListener("router:loading", () => {
-                console.log("Loading");
+            document.addEventListener("router:loading", async (e) => {
+                const details = e.detail;
+                if (details.incoming?.path?.indexOf("closure") === -1){
+                    document.body.style.opacity = "0";
+                }
+                await new Promise((resolve) => {
+                    setTimeout(resolve, 600);
+                });
+                transition();
+                console.log("Loading", details);
+            });
+            document.addEventListener("router:preloading", (e) => {
+                const details = e.detail;
+                console.log("Preloading", details);
+            });
+            document.addEventListener("router:redirecting", (e) => {
+                const details = e.detail;
+                console.log("Redirecting", details);
             });
         </script>
     </body>

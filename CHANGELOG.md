@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- asynchronous middleware and closure support ([#13](https://github.com/codewithkyle/router/issues/13))
+- router event details ([#12](https://github.com/codewithkyle/router/issues/12))
+- `router:preloading` event
+- `router:redirecting` event
+- animation and page transition methods ([#11](https://github.com/codewithkyle/router/issues/11))
+    - `transition()`
+    - `router.enableTransitions()`
+    - `router.disableTransitions()`
+    - `router.setTransitionTimer(ms)` (defaults to 5000)
+
 ## [2.0.0] - 2022-03-12
 
 Version 2 of this router has been redesigned to mimic some of the functionality of [FastRoute](https://github.com/nikic/FastRoute#defining-routes) and [ExpressJS](http://expressjs.com/en/guide/routing.html).

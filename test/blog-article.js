@@ -1,7 +1,7 @@
 export default class BlogArticle extends HTMLElement {
-    constructor(tokens, params) {
+    constructor(tokens, params, data) {
         super();
-        console.log(tokens, params);
+        console.log("Blog Article", tokens, params, data);
         this.innerHTML = `
             <h1>Blog article page for ${tokens["SLUG"]}</h1>
             <div style="padding:200vh 0;">

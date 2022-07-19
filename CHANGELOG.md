@@ -15,9 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `router:redirecting` event
 - animation and page transition methods ([#11](https://github.com/codewithkyle/router/issues/11))
     - `transition()`
-    - `enableTransitions()`
-    - `disableTransitions()`
-    - `setTransitionTimer(ms)` (defaults to 5000)
+    - `router.enableTransitions()`
+    - `router.disableTransitions()`
+    - `router.setTransitionTimer(ms)` (defaults to 5000)
 
 ## [2.0.0] - 2022-03-12
 

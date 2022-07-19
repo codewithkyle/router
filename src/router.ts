@@ -1,4 +1,4 @@
-import type { Route, Tokens, Params, GroupSettings, Module, Data, LoadedDetails, LoadingDetails, PreloadingDetails } from "../router";
+import type { Route, Tokens, Params, GroupSettings, Module, Data, LoadedDetails, LoadingDetails, PreloadingDetails, RedirectingDetails } from "../router";
 import RouterGroup from "./router-group";
 
 class Router {
@@ -521,16 +521,13 @@ class Router {
         }
     }
 
-    private dispatchEvent(type: "loading" | "loaded" | "ready" | "preloading" | "redirecting", details:LoadingDetails|LoadedDetails|PreloadingDetails|string = null) {
+    private dispatchEvent(type: "loading" | "loaded" | "ready" | "preloading" | "redirecting", details:LoadingDetails|LoadedDetails|PreloadingDetails|RedirectingDetails = null) {
         let event:CustomEvent;
         switch(type) {
             case "ready":
                 event = new CustomEvent(`router:${type}`);
                 break;
             default:
-                if (details === ""){
-                    details = "/";
-                }
                 event = new CustomEvent(`router:${type}`, {
                     detail: {
                         outgoing: this.lastRoute,

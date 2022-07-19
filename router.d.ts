@@ -10,6 +10,11 @@ export type Route = {
     segments: Array<string>;
 };
 
+export type RedirectingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+};
 export type PreloadingDetails = {
     path: string,
     hash: string,
@@ -20,6 +25,7 @@ export type LoadingDetails = {
     hash: string,
     params: Params,
     tokens: Tokens,
+    data: Data,
 };
 
 export type LoadedDetails = {
@@ -28,6 +34,13 @@ export type LoadedDetails = {
     tokens: Tokens,
     params: Params,
     data: Data,
+};
+
+export type OutgoingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+    tokens: Tokens,
 };
 
 export type Module = {
@@ -84,6 +97,9 @@ declare class Router {
         url: string,
         middleware?: Array<Function>
     ): void;
+    public enableTransitions(): void;
+    public disableTransitions(): void;
+    public setTransitionTimer(ms:number|null): void;
 }
 
 declare const mount: (element: HTMLElement) => void;
@@ -92,3 +108,4 @@ declare const pageJump: (hash: string, jump?: "auto" | "smooth") => void;
 declare const replaceState: (url: string) => void;
 declare const pushState: (url: string) => void;
 declare const router: Router;
+declare const transition: () => void;

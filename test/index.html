@@ -111,7 +111,7 @@
         <script type="module"> 
 
             // Router
-            import { router, mount, ready } from "/router.min.mjs";
+            import { router, mount, transition } from "/router.min.mjs";
 
             router.enableTransitions();
 
@@ -169,7 +169,7 @@
                 await new Promise((resolve) => {
                     setTimeout(resolve, 600);
                 });
-                ready();
+                transition();
                 console.log("Loading", details);
             });
             document.addEventListener("router:preloading", (e) => {

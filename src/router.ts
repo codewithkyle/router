@@ -170,14 +170,14 @@ class Router {
         this.mountingPoint = element;
         this.route(location.href, "replace");
         this.dispatchEvent("ready");
-        console.log(this.routes);
     }
 
     public navigateTo(url: string, history: "replace" | "push" = "push"): void {
         if (
             url.indexOf(location.origin) === 0 ||
             url.indexOf("/") === 0 ||
-            url.indexOf("#") === 0
+            url.indexOf("#") === 0 || 
+            url === ""
         ) {
             this.route(url, history);
         } else {
@@ -441,7 +441,7 @@ class Router {
                 // Notify devs that we are now loading
                 // Dispatched after transition logic to prevent race conditions
                 this.dispatchEvent("loading", {
-                    path: path,
+                    path: path.length ? path : "/",
                     hash: hash,
                     params: params,
                     tokens: tokens,
@@ -460,7 +460,16 @@ class Router {
                     }
                 }
                 if (route?.redirect != undefined) {
-                    this.route(route.redirect, history);
+                    // Announce redirect
+                    let params:Params = this.parseGetParams(route.redirect);
+                    let hash = route.redirect.match(/\#.*/)?.[0] ?? "";;
+                    let path = `/${route.redirect.replace(/(\?|\#).*/, "").trim()}`;
+                    this.dispatchEvent("redirecting", {
+                        path: path,
+                        params: params,
+                        hash: hash,
+                    });
+                    this.navigateTo(route.redirect, history);
                     return;
                 } else if (route?.closure) {
                     await route.closure({...tokens}, {...params}, data);
@@ -482,32 +491,42 @@ class Router {
                 // Routing finished successfully
                 document.documentElement.setAttribute("router", "idling");
                 this.dispatchEvent("loaded", {
-                    path: path,
+                    path: path.length ? path : "/",
                     hash: hash,
                     tokens: tokens,
                     params: params,
                     data: data,
                 });
                 this.lastRoute = {
-                    path: path,
+                    path: path.length ? path : "/",
                     hash: hash,
                     tokens: tokens,
                     params: params,
                 };
-            } catch (e) {
-                console.error(`Failed to navigate pages. Redirecting to ${e}`);
-                this.navigateTo(e);
+            } catch (url) {
+                let params:Params = this.parseGetParams(url);
+                let hash = url.match(/\#.*/)?.[0] ?? "";;
+                let path = `/${url.replace(/(\?|\#).*/, "").trim()}`;
+                this.dispatchEvent("redirecting", {
+                    path: path,
+                    hash: hash,
+                    params: params,
+                });
+                this.navigateTo(url);
             }
         }
     }
 
-    private dispatchEvent(type: "loading" | "loaded" | "ready" | "preloading", details:LoadingDetails|LoadedDetails|PreloadingDetails = null) {
+    private dispatchEvent(type: "loading" | "loaded" | "ready" | "preloading" | "redirecting", details:LoadingDetails|LoadedDetails|PreloadingDetails|string = null) {
         let event:CustomEvent;
         switch(type) {
             case "ready":
                 event = new CustomEvent(`router:${type}`);
                 break;
             default:
+                if (details === ""){
+                    details = "/";
+                }
                 event = new CustomEvent(`router:${type}`, {
                     detail: {
                         outgoing: this.lastRoute,

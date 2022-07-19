@@ -43,7 +43,7 @@
     </head>
     <body class="m-0 bg-grey-200 w-screen min-h-screen block">
         <header
-            class="w-full text-center fixed t-0 l-0"
+            class="w-full text-center block"
             flex="items-center justify-center"
         >
             <a
@@ -120,6 +120,14 @@
             document.addEventListener("router:loading", (e) => {
                 const details = e.detail;
                 console.log("Loading", details);
+            });
+            document.addEventListener("router:preloading", (e) => {
+                const details = e.detail;
+                console.log("Preloading", details);
+            });
+            document.addEventListener("router:redirecting", (e) => {
+                const details = e.detail;
+                console.log("Redirecting", details);
             });
 
             // Router

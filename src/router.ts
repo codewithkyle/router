@@ -53,7 +53,7 @@ class Router {
         this.autoTransitionTimer = ms;
     }
 
-    public ready(){
+    public transition(){
         if (this.transitionPromises.timeoutId !== null){
             clearTimeout(this.transitionPromises.timeoutId);
         }
@@ -549,6 +549,6 @@ const mount = router.mount.bind(router);
 const pageJump = router.pageJump.bind(router);
 const replaceState = router.replaceState.bind(router);
 const pushState = router.pushState.bind(router);
-const ready = router.ready.bind(router);
+const transition = router.transition.bind(router);
 
-export { navigateTo, router, mount, pageJump, replaceState, pushState, ready };
+export { navigateTo, router, mount, pageJump, replaceState, pushState, transition };

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - asynchronous middleware and closure support ([#13](https://github.com/codewithkyle/router/issues/13))
 - router event details ([#12](https://github.com/codewithkyle/router/issues/12))
 - `router:preloading` event
+- `router:redirecting` event
 
 ## [2.0.0] - 2022-03-12
 

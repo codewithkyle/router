@@ -18,6 +18,7 @@
                     Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
                     "Helvetica Neue", sans-serif;
                 overflow-y: scroll;
+                transition: opacity 300ms ease-in-out;
             }
             button {
                 border: none;
@@ -107,31 +108,12 @@
 
         <main></main>
 
-        <script type="module">
-            // Custom events
-            document.addEventListener("router:ready", (e) => {
-                const details = e.detail;
-                console.log("Ready", details);
-            });
-            document.addEventListener("router:loaded", (e) => {
-                const details = e.detail;
-                console.log("Loaded", details);
-            });
-            document.addEventListener("router:loading", (e) => {
-                const details = e.detail;
-                console.log("Loading", details);
-            });
-            document.addEventListener("router:preloading", (e) => {
-                const details = e.detail;
-                console.log("Preloading", details);
-            });
-            document.addEventListener("router:redirecting", (e) => {
-                const details = e.detail;
-                console.log("Redirecting", details);
-            });
+        <script type="module"> 
 
             // Router
-            import { router, mount } from "/router.min.mjs";
+            import { router, mount, ready } from "/router.min.mjs";
+
+            router.enableTransitions();
 
             router.add("/", {
                 tagName: "homepage-component",
@@ -168,6 +150,36 @@
 
             const main = document.body.querySelector("main");
             mount(main);
+
+            // Custom events
+            document.addEventListener("router:ready", (e) => {
+                const details = e.detail;
+                console.log("Ready", details);
+            });
+            document.addEventListener("router:loaded", (e) => { 
+                const details = e.detail;
+                document.body.style.opacity = "1";
+                console.log("Loaded", details);
+            });
+            document.addEventListener("router:loading", async (e) => {
+                const details = e.detail;
+                if (details.incoming?.path?.indexOf("closure") === -1){
+                    document.body.style.opacity = "0";
+                }
+                await new Promise((resolve) => {
+                    setTimeout(resolve, 600);
+                });
+                ready();
+                console.log("Loading", details);
+            });
+            document.addEventListener("router:preloading", (e) => {
+                const details = e.detail;
+                console.log("Preloading", details);
+            });
+            document.addEventListener("router:redirecting", (e) => {
+                const details = e.detail;
+                console.log("Redirecting", details);
+            });
         </script>
     </body>
 </html>

@@ -53,7 +53,7 @@ class Router {
         this.autoTransitionTimer = ms;
     }
 
-    public continue(){
+    public ready(){
         if (this.transitionPromises.timeoutId !== null){
             clearTimeout(this.transitionPromises.timeoutId);
         }
@@ -425,7 +425,7 @@ class Router {
 
                 // Begin optional transition animation logic
                 let transitionPromise = null;
-                if (this.useTransitions){
+                if (this.useTransitions && this.lastRoute !== null){
                     transitionPromise = new Promise(resolve => {
                         let timeoutId:number|null = null;
                         if (this.autoTransitionTimer !== null && this.autoTransitionTimer !== Infinity && this.autoTransitionTimer !== -1){
@@ -471,21 +471,25 @@ class Router {
                     });
                     this.navigateTo(route.redirect, history);
                     return;
-                } else if (route?.closure) {
+                }
+                if (route?.closure) {
                     await route.closure({...tokens}, {...params}, data);
                 } else {
                     const el = await this.import(route, url, {...tokens}, {...params}, {...data});
+                    
+                    // End transition animation logic
+                    if (transitionPromise != null){
+                        console.log(transitionPromise);
+                        await transitionPromise;
+                        console.log("it ended");
+                    }
+
                     this.mountElement(el, url, history);
                     if (hash.length) {
                         this.pageJump(hash, "auto");
                     } else {
                         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
                     }
-                }
-
-                // End transition animation logic
-                if (transitionPromise != null){
-                    await transitionPromise;
                 }
 
                 // Routing finished successfully
@@ -505,7 +509,7 @@ class Router {
                 };
             } catch (url) {
                 let params:Params = this.parseGetParams(url);
-                let hash = url.match(/\#.*/)?.[0] ?? "";;
+                let hash = url.match(/\#.*/)?.[0] ?? "";
                 let path = `/${url.replace(/(\?|\#).*/, "").trim()}`;
                 this.dispatchEvent("redirecting", {
                     path: path,
@@ -545,5 +549,6 @@ const mount = router.mount.bind(router);
 const pageJump = router.pageJump.bind(router);
 const replaceState = router.replaceState.bind(router);
 const pushState = router.pushState.bind(router);
+const ready = router.ready.bind(router);
 
-export { navigateTo, router, mount, pageJump, replaceState, pushState };
+export { navigateTo, router, mount, pageJump, replaceState, pushState, ready };

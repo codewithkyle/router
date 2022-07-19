@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - router event details ([#12](https://github.com/codewithkyle/router/issues/12))
 - `router:preloading` event
 - `router:redirecting` event
+- animation and page transition methods ([#11](https://github.com/codewithkyle/router/issues/11))
+    - `continue()`
+    - `enableTransitions()`
+    - `disableTransitions()`
+    - `setTransitionTimer(ms)` (defaults to 5000)
 
 ## [2.0.0] - 2022-03-12
 

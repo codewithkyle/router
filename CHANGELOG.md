@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2022-07-26
+
 ### Added
 
 - asynchronous middleware and closure support ([#13](https://github.com/codewithkyle/router/issues/13))
@@ -121,7 +123,8 @@ router.add("/*", "missing-page");
 -   declaritative dynamic routing
 -   automatic lazy loading
 
-[unreleased]: https://github.com/codewithkyle/router/compare/v2.0.0...HEAD
+[unreleased]: https://github.com/codewithkyle/router/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/codewithkyle/router/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/codewithkyle/router/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/codewithkyle/router/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/codewithkyle/router/compare/v1.0.0...v1.1.0

@@ -20,6 +20,10 @@ import {
     pageJump,
     replaceState,
     pushState,
+    enableTransition,
+    disableTransition,
+    setTransitionTimer,
+    transition
 } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@2/router.min.mjs";
 ```
 
@@ -39,7 +43,20 @@ import {
     pageJump,
     replaceState,
     pushState,
+    transition
 } from "https://cdn.jsdelivr.net/npm/@codewithkyle/router@2/router.min.mjs";
+
+// Enable page transitions
+router.enableTransitions();
+
+// Disable page transitions (default)
+router.disableTransitions();
+
+// Override auto page transition timer (defaults to 5000)
+router.setTransitionTimer(600) // ms
+
+// Disable auto page transition timer
+router.setTransitionTimer(-1); // accepts -1, null, Infinity
 
 // Add a route to a custom file (supports external URLs)
 router.add("/", {
@@ -107,6 +124,13 @@ export default class Homepage extends HTMLElement {
 
 Since this library bypasses the navive browser navigation functionality you will need to create your own loading state. When loading a route the Router will set a `[router]` attribute on the `<HTML>` element. You can use the snippets blow to create a custom loading animation.
 
+When page transitions (`router.enableTransitions()`) is in use you can trigger page transitions in two ways:
+
+1. You can set a default auto transition timer using `router.setTransitionTimer(ms)`
+1. You can manually trigger the transition using the `transition()` method
+
+Ideally you should use both of these methods. When you are ready to transition call the `transition()` method but also set up a reasonable auto transition timer. The page transition will occur when one of the two triggers resolve.
+
 #### CSS
 
 ```css
@@ -130,18 +154,70 @@ html[router="loading"] * {
 ### Custom Events
 
 ```typescript
+type Data = {
+    [key:string]: any;
+};
+type RedirectingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+}
+type PreloadingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+};
+type LoadingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+    tokens: Tokens,
+    data: Data,
+};
+type LoadedDetails = {
+    path: string,
+    hash: string,
+    tokens: Tokens,
+    params: Params,
+    data: Data,
+};
+type OutgoingDetails = {
+    path: string,
+    hash: string,
+    params: Params,
+    tokens: Tokens,
+};
+
 // Fired after the router has started and is ready to hijack navigation events
 document.addEventListener("router:ready", () => {
     console.log("Ready");
 });
 
+// Fired when the page has started the routing process
+document.addEventListener("router:preloading", (e) => {
+    const incoming = e.detail.incoming instanceof PreloadingDetails;
+    const outgoing = e.detail.outgoing instanceof OutgoingDetails;
+    console.log("Preloading", incoming, outgoing);
+});
+
 // Fired when the page has started the loading process
-document.addEventListener("router:loading", () => {
-    console.log("Loading");
+document.addEventListener("router:loading", (e) => {
+    const incoming = e.detail.incoming instanceof LoadingDetails;
+    const outgoing = e.detail.outgoing instanceof OutgoingDetails;
+    console.log("Loading", incoming, outgoing);
 });
 
 // Fired after the page has loaded and the history state has been updated
-document.addEventListener("router:loaded", () => {
-    console.log("Loaded");
+document.addEventListener("router:loaded", (e) => {
+    const incoming = e.detail.incoming instanceof LoadedDetails;
+    const outgoing = e.detail.outgoing instanceof OutgoingDetails;
+    console.log("Loaded", incoming, outgoing);
+});
+
+// Fired when the page was redirected
+document.addEventListener("router:redirecting", (e) => {
+    const incoming = e.detail.incoming instanceof RedirectingDetails;
+    const outgoing = e.detail.outgoing instanceof OutgoingDetails;
+    console.log("Redirecting", incoming, outgoing);
 });
 ```

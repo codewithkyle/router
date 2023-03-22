@@ -282,7 +282,7 @@ class Router {
 
     private parseTokens(url: string, route: Route): Tokens {
         const tokens: Tokens = {};
-        if (route === null){
+        if (route === null || route.segments[0] === "*"){
             return tokens;
         }
         url = url
@@ -376,9 +376,9 @@ class Router {
                 route.segments.length === segments.length
             ) {
                 let failed = false;
-                for (let s = 0; s < segments.length; s++) {
-                    if (route.segments[s] === "*") {
-                        break;
+                for (let s = 0; s < route.segments.length; s++) {
+                    if (route.segments[s] === segments[s]) {
+                        continue;
                     } else if (route.segments[s].indexOf(":") !== -1) {
                         const index = parseInt(route.segments[s].substring(1));
                         if (route.regex[index].test(segments[s])) {
@@ -386,9 +386,9 @@ class Router {
                         } else {
                             failed = true;
                             break;
-                        }
-                    } else if (route.segments[s] === segments[s]) {
-                        continue;
+                        } 
+                    } else if (route.segments[s] === "*") {
+                        break;
                     } else {
                         failed = true;
                         break;
@@ -495,9 +495,7 @@ class Router {
                     
                     // End transition animation logic
                     if (transitionPromise != null){
-                        console.log(transitionPromise);
                         await transitionPromise;
-                        console.log("it ended");
                     }
 
                     this.mountElement(el, url, history);

@@ -104,6 +104,13 @@
                 style="height: 36px"
                 >Closure</a
             >
+            <a
+                href="/just/a/page"
+                class="bg-primary-700 font-white px-1 radius-0.25 font-sm font-medium m-0.5 cursor-pointer inline-block shadow-md text-uppercase"
+                flex="items-center justify-center"
+                style="height: 36px"
+                >Static Page</a
+            >
         </header>
 
         <main></main>
@@ -146,6 +153,16 @@
                 });
                 sessionStorage.setItem("closure", "true");
                 alert("You may now access the test pages.");
+            });
+
+            router.add("/just/a/*", {
+                tagName: "just-a-page",
+                file: "./jap.js",
+            });
+
+            router.add("*", {
+                tagName: "missing-page",
+                file: "./404.js",
             });
 
             const main = document.body.querySelector("main");

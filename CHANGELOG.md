@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2023-03-22
+
+### Fixed
+
+- token parsing ([#15](https://github.com/codewithkyle/router/issues/15))
+- anchor hijacking ([#15](https://github.com/codewithkyle/router/issues/15))
+- infinite failed module import loop ([#16](https://github.com/codewithkyle/router/issues/16))
+
 ## [2.1.0] - 2022-07-26
 
 ### Added
@@ -123,7 +131,8 @@ router.add("/*", "missing-page");
 -   declaritative dynamic routing
 -   automatic lazy loading
 
-[unreleased]: https://github.com/codewithkyle/router/compare/v2.1.0...HEAD
+[unreleased]: https://github.com/codewithkyle/router/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/codewithkyle/router/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/codewithkyle/router/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/codewithkyle/router/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/codewithkyle/router/compare/v1.1.0...v1.1.1

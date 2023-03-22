@@ -332,13 +332,15 @@ class Router {
 
         let module = await this.importModule(route.file);
         if (module === null) {
-            throw "/404";
+            console.error(`Failed to import module: ${route.file}`);
+            return null;
         }
 
         if (!module?.default) {
             const key = Object.keys(module)?.[0] ?? null;
             if (!key) {
-                throw "/404";
+                console.error(`Failed to find module export: ${route.file}`);
+                return null;
             }
             module = Object.assign(
                 {
@@ -486,6 +488,10 @@ class Router {
                     await route.closure({...tokens}, {...params}, data);
                 } else {
                     const el = await this.import(route, url, {...tokens}, {...params}, {...data});
+
+                    if (el === null) {
+                        return;
+                    }
                     
                     // End transition animation logic
                     if (transitionPromise != null){

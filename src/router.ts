@@ -31,6 +31,12 @@ class Router {
             resolve: () => {},
             timeoutId: null,
         };
+        window.addEventListener("click", this.hijackClick, {
+            capture: true,
+        });
+        window.addEventListener("popstate", this.hijackPopstate, {
+            capture: true,
+        });
     }
 
     public enableTransitions(): void {
@@ -161,12 +167,6 @@ class Router {
     }
 
     public mount(element: HTMLElement): void {
-        if (this.mountingPoint === null) {
-            document.addEventListener("click", this.hijackClick, {
-                capture: true,
-            });
-            window.addEventListener("popstate", this.hijackPopstate);
-        }
         this.mountingPoint = element;
         this.route(location.href, "replace");
         this.dispatchEvent("ready");
@@ -177,11 +177,12 @@ class Router {
             url.indexOf(location.origin) === 0 ||
             url.indexOf("/") === 0 ||
             url.indexOf("#") === 0 || 
-            url === ""
+            url === "" || 
+            url.indexOf("http") === -1
         ) {
             this.route(url, history);
         } else {
-            location.href = url;
+            console.error(`Invalid URL: ${url}`);
         }
     }
 
@@ -228,20 +229,29 @@ class Router {
     };
 
     private hijackClick: EventListener = (e: Event) => {
+        const el = e.target as HTMLElement;
+        const target = el.closest("[href]");
         if (
-            e.target instanceof HTMLAnchorElement &&
-            e.target.target !== "_blank" &&
-            e.target.getAttribute("href") &&
-            e.target.href.indexOf(location.origin) !== -1
+            target instanceof HTMLAnchorElement &&
+            target.target !== "_blank" &&
+            target.getAttribute("href") !== null
         ) {
-            e.preventDefault();
-            e.stopPropagation();
-            const url = e.target.getAttribute("href");
-            let history = e.target.getAttribute("history");
-            if (history === "push" || history === "replace") {
-                this.route(url, history);
-            } else {
-                this.route(url);
+            if (
+                target.href.indexOf(location.origin) === 0 ||
+                target.href.indexOf("/") === 0 ||
+                target.href.indexOf("#") === 0 ||
+                target.href === "" ||
+                target.href.indexOf("http") === -1
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+                const url = target.getAttribute("href");
+                let history = target.getAttribute("history");
+                if (history === "push" || history === "replace") {
+                    this.route(url, history);
+                } else {
+                    this.route(url);
+                }
             }
         }
     };
@@ -281,7 +291,7 @@ class Router {
             .replace(/\/+/g, "/");
         const segments = url.split("/");
         for (let i = 0; i < segments.length; i++) {
-            if (route.segments[i].indexOf(":") !== -1) {
+            if (route.segments?.[i]?.indexOf(":") !== -1) {
                 const index = parseInt(route.segments[i].substring(1));
                 tokens[route.tokens[index]] = segments[i];
             }

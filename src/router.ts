@@ -301,7 +301,7 @@ class Router {
 
     private parseGetParams(url: string): Params {
         const params: Params = {};
-        const urlParams = url.match(/\?.*/)?.[0] ?? null;
+        const urlParams = url?.match(/\?.*(?=\#|$)/)?.[0] ?? null;
         if (!urlParams) {
             return params;
         }

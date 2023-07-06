@@ -325,38 +325,43 @@ class Router {
         tokens: Tokens,
         params: Params,
         data: Data,
-    ): Promise<HTMLElement> {
-        if (this.modules?.[route.tagName]) {
-            return new this.modules[route.tagName].default(tokens, params, data);
-        }
+    ): Promise<HTMLElement|null> {
+        try{
+            if (this.modules?.[route.tagName]) {
+                return new this.modules[route.tagName].default(tokens, params, data);
+            }
 
-        let module = await this.importModule(route.file);
-        if (module === null) {
-            console.error(`Failed to import module: ${route.file}`);
-            return null;
-        }
-
-        if (!module?.default) {
-            const key = Object.keys(module)?.[0] ?? null;
-            if (!key) {
-                console.error(`Failed to find module export: ${route.file}`);
+            let module = await this.importModule(route.file);
+            if (module === null) {
+                console.error(`Failed to import module: ${route.file}`);
                 return null;
             }
-            module = Object.assign(
-                {
-                    default: module[key],
-                },
-                module
-            );
+
+            if (!module?.default) {
+                const key = Object.keys(module)?.[0] ?? null;
+                if (!key) {
+                    console.error(`Failed to find module export: ${route.file}`);
+                    return null;
+                }
+                module = Object.assign(
+                    {
+                        default: module[key],
+                    },
+                    module
+                );
+            }
+
+            this.modules[route.tagName] = module;
+
+            if (!customElements.get(route.tagName)) {
+                customElements.define(route.tagName, module.default);
+            }
+
+            return new this.modules[route.tagName].default(tokens, params, data);
+        } catch (e) {
+            console.error(e);
+            return null;
         }
-
-        this.modules[route.tagName] = module;
-
-        if (!customElements.get(route.tagName)) {
-            customElements.define(route.tagName, module.default);
-        }
-
-        return new this.modules[route.tagName].default(tokens, params, data);
     }
 
     private findRouteModel(url: string): Route {
